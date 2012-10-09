@@ -13,11 +13,11 @@ SAMPLEOBJ = sample.o
 SAMPLEOBJ += serial.o
 
 # Atmega 32:
-# 256 Words: 3F00
-# 512 Words: 3E00
-# 1024 Words: 3C00
-# 2048 Words: 3800
-BOOTSTART = 0x3800
+# 256 Words: 3F00*2
+# 512 Words: 3E00*2
+# 1024 Words: 3C00*2
+# 2048 Words: 3800*2
+BOOTSTART = 0x7000
 
 LINKER = -Wl,-Ttext=$(BOOTSTART)
 
