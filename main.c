@@ -27,7 +27,7 @@
 
 #include "serial.h"
 
-#define BAUDRATE 19200
+#define BAUDRATE 38400
 #define BOOTDELAY 1000
 
 #define XON() serialWrite(17)
@@ -61,8 +61,9 @@ int main(void) {
 	uint8_t c;
 
 	// Move Interrupt Vectors into Bootloader Section
-	GICR = (1 << IVCE);
-	GICR = (1 << IVSEL);
+	c = GICR;
+	GICR = c | (1 << IVCE);
+	GICR = c | (1 << IVSEL);
 
 	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
 	sei();
@@ -245,6 +246,7 @@ void program(uint32_t page, uint8_t *d) {
 }
 
 void gotoApplication(void) {
+	uint8_t t;
 	void (*realProgram)(void) = 0x0000; // Function Pointer to real program
 
 	// Free Hardware Resources
@@ -254,8 +256,9 @@ void gotoApplication(void) {
 	cli();
 
 	// Fix Interrupt Vectors
-	GICR = (1 << IVCE);
-	GICR = 0;
+	t = GICR;
+	GICR = t | (1 << IVCE);
+	GICR = t & ~(1 << IVSEL);
 
 	// Call main program
 #ifdef EIND

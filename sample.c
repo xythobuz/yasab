@@ -25,7 +25,7 @@
 
 #include "serial.h"
 
-#define BAUDRATE 19200
+#define BAUDRATE 38400
 
 int main(void) {
 	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
