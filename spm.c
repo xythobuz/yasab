@@ -37,8 +37,8 @@ void program(uint32_t page, uint8_t *d) {
 	PROGRAMMED();
 
 #if DEBUG >= 1
-	debugPrint("\nProgramming page ");
-	debugPrint(ultoa(page, buff, 10));
+	debugPrint("\nProgramming page 0x");
+	debugPrint(ultoa(page, buff, 16));
 	debugPrint("\n");
 #endif
 

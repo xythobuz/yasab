@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <avr/boot.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "global.h"
 

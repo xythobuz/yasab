@@ -23,8 +23,8 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#define RX_BUFFER_SIZE 2
-#define TX_BUFFER_SIZE 2
+#define RX_BUFFER_SIZE 4
+#define TX_BUFFER_SIZE 4
 
 #include "serial.h"
 

@@ -264,10 +264,13 @@ uint8_t transmitBufferEmpty(void) {
 }
 
 void serialClose() {
-
-	while (!transmitBufferEmpty());
+#ifdef SERIALNONBLOCK
+	while (SERIALB & (1 << SERIALUDRIE)); // Wait while interrupt is on
+#else
 	if (!serialHasChar())
 		while (!(SERIALA & (1 << UDRE))); // Wait for transmissions to complete
+#endif
+
 	SERIALB = 0;
 	SERIALC = 0;
 #ifdef SERIALBAUD8

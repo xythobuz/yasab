@@ -21,6 +21,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
 
 #include "global.h"
 
@@ -50,6 +51,10 @@ uint16_t convert(uint8_t *d, uint8_t l) {
 }
 
 void gotoApplication(void) {
+	// serialClose();
+	// wdt_enable(WDTO_15MS);
+	// for(;;);
+
 	uint8_t t;
 	void (*realProgram)(void) = 0x0000; // Function Pointer to real program
 
