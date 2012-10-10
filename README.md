@@ -11,6 +11,8 @@ Running "make" will produce yasab.hex and sample.hex. The first is the real boot
 
 At the moment, AVRs with Flash > 64KB can not be programmed, as the parser can only read type 1 hex file records.
 
+Configuration Options like Baudrate, Bootdelay or Clock Frequency can be changed in the makefile.
+
 ## License
 
 YASAB is released under the [LGPLv3](http://www.gnu.org/licenses/lgpl-3.0.html).

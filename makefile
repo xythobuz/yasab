@@ -1,7 +1,16 @@
+# Target
 MCU = atmega32
+# Clock Frequency
 F_CPU = 16000000
-
+# Baudrate to use
+BAUDRATE = 38400
+# Time in ms to wait for incoming files
+BOOTDELAY = 1000
+# Command to delete files
 RM = rm -rf
+
+# ---------------------------------
+
 OPT = s
 CSTANDARD = gnu99
 
@@ -37,6 +46,8 @@ CARGS += -Wall -Wstrict-prototypes
 CARGS += -std=$(CSTANDARD)
 CARGS += -DF_CPU=$(F_CPU)
 CARGS += -DBOOTSTART=$(BOOTSTART)
+CARGS += -DBAUDRATE=$(BAUDRATE)
+CARGS += -DBOOTDELAY=$(BOOTDELAY)
 CARGS += -ffreestanding
 CARGS += --combine -fwhole-program
 

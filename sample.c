@@ -28,8 +28,6 @@
 
 #include "serial.h"
 
-#define BAUDRATE 38400
-
 typedef void (*Func)(void);
 
 void main(void) __attribute__ ((noreturn));

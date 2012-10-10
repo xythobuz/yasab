@@ -20,8 +20,12 @@
  */
 #include "serial.h"
 
-#define BAUDRATE 38400
-#define BOOTDELAY 1000
+// Debug Output
+#if defined(DEBUG) && (DEBUG > 0)
+#define debugPrint(x) serialWriteString(x)
+#else
+#define debugPrint(ignore)
+#endif
 
 #define XON() serialWrite(17)
 #define XOFF() serialWrite(19)

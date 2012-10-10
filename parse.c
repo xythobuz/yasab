@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <avr/boot.h>
 
+#define DEBUG 0
+
 #include "global.h"
 
 void parse(uint8_t c) {
@@ -115,6 +117,7 @@ void parse(uint8_t c) {
 				// EOF, write rest
 				program(flashPage, buf);
 				appState = EXIT;
+				debugPrint("\nFinished!\n");
 			}
 			if (checksum == 0) {
 				parseState = START;
