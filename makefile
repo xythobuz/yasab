@@ -59,6 +59,7 @@ program: yasab.hex
 	avrdude -p atmega32 -c stk500v2 -P /dev/tty.usbmodem641 -e -U yasab.hex
 	make clean
 	make sample.hex
+	make cleanPart
 
 yasab.elf: $(SRC)
 	avr-gcc $(CARGS) $(LINKER)$(SECTION) $(SRC) --output yasab.elf
@@ -73,7 +74,7 @@ sample.elf: $(SAMPLESRC)
 
 sample.hex: sample.elf
 	avr-objcopy -O ihex sample.elf sample.hex
-	make cleanPart
+	avr-objdump -h -S sample.elf > sample.lss
 
 cleanPart:
 	$(RM) *.o

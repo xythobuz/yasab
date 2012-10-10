@@ -31,12 +31,12 @@ void parse(uint8_t c) {
 	static uint8_t hexBufI, size, nextPage = 1, hexCount, type;
 	static uint16_t address, checksum, flashPage, flashI;
 	static uint8_t hexBuf[5];
-	static uint8_t appState = WAITING;
 	static uint8_t buf[SPM_PAGESIZE];
 
 	if (parseState == START) {
 		if (c == ':') {
 			XOFF();
+			debugPrint("\nStart\n");
 			parseState = SIZE;
 			hexBufI = 0;
 			checksum = 0;
@@ -47,6 +47,7 @@ void parse(uint8_t c) {
 		hexBuf[hexBufI++] = c;
 		if (hexBufI >= 2) {
 			XOFF();
+			debugPrint("\nSize\n");
 			parseState = ADDRESS;
 			hexBufI = 0;
 			size = convert(hexBuf, 2);
@@ -57,6 +58,7 @@ void parse(uint8_t c) {
 		hexBuf[hexBufI++] = c;
 		if (hexBufI >= 4) {
 			XOFF();
+			debugPrint("\nAddress\n");
 			parseState = TYPE;
 			hexBufI = 0;
 			address = convert(hexBuf, 4);
@@ -72,6 +74,7 @@ void parse(uint8_t c) {
 		hexBuf[hexBufI++] = c;
 		if (hexBufI >= 2) {
 			XOFF();
+			debugPrint("\nType\n");
 			hexBufI = 0;
 			hexCount = 0;
 			type = convert(hexBuf, 2);
@@ -87,6 +90,7 @@ void parse(uint8_t c) {
 		hexBuf[hexBufI++] = c;
 		if (hexBufI >= 2) {
 			XOFF();
+			debugPrint("\nData\n");
 			hexBufI = 0;
 			buf[flashI] = convert(hexBuf, 2);
 			checksum += buf[flashI];
@@ -110,6 +114,7 @@ void parse(uint8_t c) {
 		hexBuf[hexBufI++] = c;
 		if (hexBufI >= 2) {
 			XOFF();
+			debugPrint("\nChecksum\n");
 			c = convert(hexBuf, 2);
 			checksum += c;
 			checksum &= 0x00FF;
@@ -117,17 +122,18 @@ void parse(uint8_t c) {
 				// EOF, write rest
 				program(flashPage, buf);
 				appState = EXIT;
-				debugPrint("\nFinished!\n");
+				debugPrint("\nFinished\n");
 			}
 			if (checksum == 0) {
 				parseState = START;
 			} else {
 				parseState = ERROR;
+				PROGERROR();
 			}
 			XON();
 		}
 	} else {
-		PROGERROR();
+		debugPrint("\nError\n");
 		gotoApplication();
 	}
 }

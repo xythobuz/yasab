@@ -27,8 +27,8 @@
 #define debugPrint(ignore)
 #endif
 
-#define XON() serialWrite(17)
-#define XOFF() serialWrite(19)
+#define XON() serialWrite(0x11)
+#define XOFF() serialWrite(0x13)
 
 #define PROGRAMMED() serialWrite('P');
 #define PROGERROR() serialWrite('E');
@@ -38,6 +38,8 @@
 #define PARSING 1
 #define EXIT 2
 
+extern uint8_t appState;
+
 // Parser State
 #define START 0
 #define SIZE 1
@@ -46,8 +48,6 @@
 #define DATA 4
 #define CHECKSUM 5
 #define ERROR 6
-
-extern uint8_t appState;
 
 void parse(uint8_t c);
 void set(uint8_t *d, uint8_t c, uint16_t l);

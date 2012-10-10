@@ -52,17 +52,17 @@ void main(void) {
 	serialWriteString("Send HEX File!\n");
 
 	for(;;) {
-		if (appState == WAITING) {
+		if (appState == PARSING) {
+			while(!serialHasChar());
+			c = serialGet();
+			parse(c);
+		} else if (appState == WAITING) {
 			while(!serialHasChar());
 			c = serialGet();
 			if (c == ':') {
 				appState = PARSING;
 				parse(c);
 			}
-		} else if (appState == PARSING) {
-			while(!serialHasChar());
-			c = serialGet();
-			parse(c);
 		} else {
 			serialWriteString("Thank you!\n");
 			gotoApplication();

@@ -23,11 +23,25 @@
 #include <avr/boot.h>
 #include <util/atomic.h>
 
+#define DEBUG 1
+
 #include "global.h"
+
+#if DEBUG >= 1
+#include <stdlib.h>
+char buff[5];
+#endif
 
 void program(uint32_t page, uint8_t *d) {
 	uint16_t i, w;
 	PROGRAMMED();
+
+#if DEBUG >= 1
+	debugPrint("\nProgramming page ");
+	debugPrint(ultoa(page, buff, 10));
+	debugPrint("\n");
+#endif
+
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		eeprom_busy_wait();
 		boot_page_erase(page);
