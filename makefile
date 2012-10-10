@@ -7,16 +7,19 @@ CSTANDARD = gnu99
 
 SRC = main.c
 SRC += serial.c
+SRC += parse.c
+SRC += spm.c
+SRC += util.c
 
 OBJ = $(SRC:.c=.o)
 SAMPLEOBJ = sample.o
 SAMPLEOBJ += serial.o
 
 # Atmega 32:
-# 256 Words: 3F00*2
-# 512 Words: 3E00*2
-# 1024 Words: 3C00*2
-# 2048 Words: 3800*2
+# 256 Words: 3F00*2=0x7E00
+# 512 Words: 3E00*2=0x7C00
+# 1024 Words: 3C00*2=0x7800
+# 2048 Words: 3800*2=0x7000
 BOOTSTART = 0x7000
 
 LINKER = -Wl,-Ttext=$(BOOTSTART)
@@ -30,6 +33,7 @@ CARGS += -fshort-enums
 CARGS += -Wall -Wstrict-prototypes
 CARGS += -std=$(CSTANDARD)
 CARGS += -DF_CPU=$(F_CPU)
+CARGS += -DBOOTSTART=$(BOOTSTART)
 
 
 # ---------------------------------

@@ -29,8 +29,13 @@
 #define SERIALNONBLOCK
 
 // RX & TX buffer size in bytes, power of 2
-#define RX_BUFFER_SIZE 8
+#ifndef RX_BUFFER_SIZE
+#define RX_BUFFER_SIZE 32
+#endif
+
+#ifndef TX_BUFFER_SIZE
 #define TX_BUFFER_SIZE 8
+#endif
 
 // Select Baudrate with this macro
 #define BAUD(baudRate,xtalCpu) ((xtalCpu)/((baudRate)*16l)-1)
@@ -84,12 +89,12 @@ void serialWrite(uint8_t data);
  */
 void serialWriteString(const char *data);
 
+uint8_t transmitBufferEmpty(void);
+
 /* void serialClose(void)
  *
  * Restore normal port operation and reset buffers.
  */
 void serialClose(void);
-
-uint8_t transmitBufferEmpty(void);
 
 #endif // _serial_h

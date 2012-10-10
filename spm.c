@@ -1,5 +1,5 @@
 /*
- * sample.c
+ * spm.c
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -20,47 +20,25 @@
  */
 #include <avr/io.h>
 #include <stdint.h>
-#include <util/delay.h>
-#include <avr/interrupt.h>
+#include <avr/boot.h>
+#include <util/atomic.h>
 
-#define RX_BUFFER_SIZE 2
-#define TX_BUFFER_SIZE 2
+#include "global.h"
 
-#include "serial.h"
-
-#define BAUDRATE 38400
-
-typedef void (*Func)(void);
-
-int main(void) {
-	uint8_t c;
-	Func bootloader = (Func)BOOTSTART;
-
-	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
-	sei();
-
-	DDRA = 0xC0;
-	PORTA |= 0x40;
-
-	while(1) {
-		serialWriteString("Hi there...\n");
-		PORTA ^= 0xC0;
-		_delay_ms(1000);
-		if (serialHasChar()) {
-			c = serialGet();
-			if (c == 'q') {
-				serialWriteString("Goodbye...\n");
-				serialClose();
-#ifdef EIND
-				EIND = 1; // Bug in gcc for Flash > 128KB
-#endif
-				bootloader();
-			} else {
-				serialWriteString("UUhh... You sent '");
-				serialWrite(c);
-				serialWriteString("'...?\n");
-			}
+void program(uint32_t page, uint8_t *d) {
+	uint16_t i, w;
+	PROGRAMMED();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		eeprom_busy_wait();
+		boot_page_erase(page);
+		boot_spm_busy_wait();
+		for (i = 0; i < SPM_PAGESIZE; i += 2) {
+			w = *d++;
+			w += ((*d++) << 8);
+			boot_page_fill(page + i, w);
 		}
+		boot_page_write(page);
+		boot_spm_busy_wait();
+		boot_rww_enable(); // Allows us to jump back
 	}
-	return 0;
 }

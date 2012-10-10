@@ -1,5 +1,5 @@
 /*
- * sample.c
+ * global.h
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -18,49 +18,35 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with YASAB.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <avr/io.h>
-#include <stdint.h>
-#include <util/delay.h>
-#include <avr/interrupt.h>
-
-#define RX_BUFFER_SIZE 2
-#define TX_BUFFER_SIZE 2
-
 #include "serial.h"
 
 #define BAUDRATE 38400
+#define BOOTDELAY 1000
 
-typedef void (*Func)(void);
+#define XON() serialWrite(17)
+#define XOFF() serialWrite(19)
 
-int main(void) {
-	uint8_t c;
-	Func bootloader = (Func)BOOTSTART;
+#define PROGRAMMED() serialWrite('P');
+#define PROGERROR() serialWrite('E');
 
-	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
-	sei();
+// appState: Bootloader State
+#define WAITING 0
+#define PARSING 1
+#define EXIT 2
 
-	DDRA = 0xC0;
-	PORTA |= 0x40;
+// Parser State
+#define START 0
+#define SIZE 1
+#define ADDRESS 2
+#define TYPE 3
+#define DATA 4
+#define CHECKSUM 5
+#define ERROR 6
 
-	while(1) {
-		serialWriteString("Hi there...\n");
-		PORTA ^= 0xC0;
-		_delay_ms(1000);
-		if (serialHasChar()) {
-			c = serialGet();
-			if (c == 'q') {
-				serialWriteString("Goodbye...\n");
-				serialClose();
-#ifdef EIND
-				EIND = 1; // Bug in gcc for Flash > 128KB
-#endif
-				bootloader();
-			} else {
-				serialWriteString("UUhh... You sent '");
-				serialWrite(c);
-				serialWriteString("'...?\n");
-			}
-		}
-	}
-	return 0;
-}
+extern uint8_t appState;
+
+void parse(uint8_t c);
+void set(uint8_t *d, uint8_t c, uint16_t l);
+uint16_t convert(uint8_t *d, uint8_t l);
+void program(uint32_t page, uint8_t *d);
+void gotoApplication(void);

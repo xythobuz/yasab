@@ -1,5 +1,5 @@
 /*
- * sample.c
+ * spm.c
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
  *
@@ -20,47 +20,52 @@
  */
 #include <avr/io.h>
 #include <stdint.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 
-#define RX_BUFFER_SIZE 2
-#define TX_BUFFER_SIZE 2
+#include "global.h"
 
-#include "serial.h"
-
-#define BAUDRATE 38400
-
-typedef void (*Func)(void);
-
-int main(void) {
-	uint8_t c;
-	Func bootloader = (Func)BOOTSTART;
-
-	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
-	sei();
-
-	DDRA = 0xC0;
-	PORTA |= 0x40;
-
-	while(1) {
-		serialWriteString("Hi there...\n");
-		PORTA ^= 0xC0;
-		_delay_ms(1000);
-		if (serialHasChar()) {
-			c = serialGet();
-			if (c == 'q') {
-				serialWriteString("Goodbye...\n");
-				serialClose();
-#ifdef EIND
-				EIND = 1; // Bug in gcc for Flash > 128KB
-#endif
-				bootloader();
-			} else {
-				serialWriteString("UUhh... You sent '");
-				serialWrite(c);
-				serialWriteString("'...?\n");
-			}
-		}
+void set(uint8_t *d, uint8_t c, uint16_t l) {
+	uint16_t i;
+	for (i = 0; i < l; i++) {
+		d[i] = c;
 	}
-	return 0;
+}
+
+uint16_t convert(uint8_t *d, uint8_t l) {
+	uint8_t i, c;
+	uint16_t s = 0;
+
+	for (i = 0; i < l; i++) {
+		c = d[i];
+		if ((c >= '0') && (c <= '9')) {
+			c -= '0';
+		} else if ((c >= 'A') && (c <= 'F')) {
+			c -= 'A' - 10;
+		} else if ((c >= 'a') && (c <= 'f')) {
+			c -= 'a' - 10;
+		}
+		s = (16 * s) + c;
+	}
+	return s;
+}
+
+void gotoApplication(void) {
+	uint8_t t;
+	void (*realProgram)(void) = 0x0000; // Function Pointer to real program
+
+	// Free Hardware Resources
+	serialClose();
+
+	cli();
+
+	// Fix Interrupt Vectors
+	t = GICR;
+	GICR = t | (1 << IVCE);
+	GICR = t & ~(1 << IVSEL);
+
+	// Call main program
+#ifdef EIND
+	EIND = 0; // Bug in gcc for Flash > 128KB
+#endif
+	realProgram();
 }
