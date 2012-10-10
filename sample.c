@@ -32,7 +32,8 @@
 
 typedef void (*Func)(void);
 
-int main(void) {
+void main(void) __attribute__ ((noreturn));
+void main(void) {
 	uint8_t c;
 	Func bootloader = (Func)BOOTSTART;
 
@@ -42,7 +43,7 @@ int main(void) {
 	DDRA = 0xC0;
 	PORTA |= 0x40;
 
-	while(1) {
+	for(;;) {
 		serialWriteString("Hi there...\n");
 		PORTA ^= 0xC0;
 		_delay_ms(1000);
@@ -62,5 +63,4 @@ int main(void) {
 			}
 		}
 	}
-	return 0;
 }

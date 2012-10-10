@@ -29,7 +29,8 @@
 
 uint8_t appState = WAITING;
 
-int main(void) {
+void main(void) __attribute__ ((noreturn));
+void main(void) {
 	uint8_t c;
 
 	// Move Interrupt Vectors into Bootloader Section
@@ -50,7 +51,7 @@ int main(void) {
 
 	serialWriteString("Send HEX File!\n");
 
-	while(1) {
+	for(;;) {
 		if (appState == WAITING) {
 			while(!serialHasChar());
 			c = serialGet();
@@ -67,6 +68,4 @@ int main(void) {
 			gotoApplication();
 		}
 	}
-
-	return 0; // hehe...
 }
