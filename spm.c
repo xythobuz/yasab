@@ -33,26 +33,26 @@ char buff[5];
 #endif
 
 void program(uint32_t page, uint8_t *d) {
-	uint16_t i, w;
-	PROGRAMMED();
+    uint16_t i, w;
+    PROGRAMMED();
 
 #if DEBUG >= 1
-	debugPrint("\nProgramming page 0x");
-	debugPrint(ultoa(page, buff, 16));
-	debugPrint("\n");
+    debugPrint("\nProgramming page 0x");
+    debugPrint(ultoa(page, buff, 16));
+    debugPrint("\n");
 #endif
 
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		eeprom_busy_wait();
-		boot_page_erase(page);
-		boot_spm_busy_wait();
-		for (i = 0; i < SPM_PAGESIZE; i += 2) {
-			w = *d++;
-			w += ((*d++) << 8);
-			boot_page_fill(page + i, w);
-		}
-		boot_page_write(page);
-		boot_spm_busy_wait();
-		boot_rww_enable(); // Allows us to jump back
-	}
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        eeprom_busy_wait();
+        boot_page_erase(page);
+        boot_spm_busy_wait();
+        for (i = 0; i < SPM_PAGESIZE; i += 2) {
+            w = *d++;
+            w += ((*d++) << 8);
+            boot_page_fill(page + i, w);
+        }
+        boot_page_write(page);
+        boot_spm_busy_wait();
+        boot_rww_enable(); // Allows us to jump back
+    }
 }

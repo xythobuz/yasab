@@ -25,47 +25,59 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 
+#define DEBUG 1
+
 #include "global.h"
 
 uint8_t appState = WAITING;
 
+#if DEBUG >= 1
+#include <stdlib.h>
+char buff[5];
+#endif
+
 void main(void) __attribute__ ((noreturn));
 void main(void) {
-	uint8_t c;
+    uint8_t c;
 
-	// Move Interrupt Vectors into Bootloader Section
-	c = GICR;
-	GICR = c | (1 << IVCE);
-	GICR = c | (1 << IVSEL);
+    // Move Interrupt Vectors into Bootloader Section
+    c = GICR;
+    GICR = c | (1 << IVCE);
+    GICR = c | (1 << IVSEL);
 
-	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
-	sei();
+    serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
+    sei();
+    XON();
 
-	serialWriteString("Bootloader here\n");
+    debugPrint("Bootloader here\nPage Size: ");
+    debugPrint(ultoa(SPM_PAGESIZE, buff, 10));
+    debugPrint(" bytes\n");
 
-	_delay_ms(BOOTDELAY);
+    _delay_ms(BOOTDELAY);
 
-	if (!serialHasChar()) {
-		gotoApplication();
-	}
+    if (!serialHasChar()) {
+        gotoApplication();
+    }
 
-	serialWriteString("Send HEX File!\n");
 
-	for(;;) {
-		if (appState == PARSING) {
-			while(!serialHasChar());
-			c = serialGet();
-			parse(c);
-		} else if (appState == WAITING) {
-			while(!serialHasChar());
-			c = serialGet();
-			if (c == ':') {
-				appState = PARSING;
-				parse(c);
-			}
-		} else {
-			serialWriteString("Thank you!\n");
-			gotoApplication();
-		}
-	}
+
+    serialWriteString("Send HEX File!\n");
+
+    for(;;) {
+        if (appState == PARSING) {
+            while(!serialHasChar());
+            c = serialGet();
+            parse(c);
+        } else if (appState == WAITING) {
+            while(!serialHasChar());
+            c = serialGet();
+            if (c == ':') {
+                appState = PARSING;
+                parse(c);
+            }
+        } else {
+            serialWriteString("Thank you!\n");
+            gotoApplication();
+        }
+    }
 }

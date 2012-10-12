@@ -32,33 +32,33 @@ typedef void (*Func)(void);
 
 void main(void) __attribute__ ((noreturn));
 void main(void) {
-	uint8_t c;
-	Func bootloader = (Func)BOOTSTART;
+    uint8_t c;
+    Func bootloader = (Func)BOOTSTART;
 
-	serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
-	sei();
+    serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
+    sei();
 
-	DDRA = 0xC0;
-	PORTA |= 0x40;
+    DDRA = 0xC0;
+    PORTA |= 0x40;
 
-	for(;;) {
-		serialWriteString("Hi there...\n");
-		PORTA ^= 0xC0;
-		_delay_ms(1000);
-		if (serialHasChar()) {
-			c = serialGet();
-			if (c == 'q') {
-				serialWriteString("Goodbye...\n");
-				serialClose();
+    for(;;) {
+        serialWriteString("Hi there...\n");
+        PORTA ^= 0xC0;
+        _delay_ms(1000);
+        if (serialHasChar()) {
+            c = serialGet();
+            if (c == 'q') {
+                serialWriteString("Goodbye...\n");
+                serialClose();
 #ifdef EIND
-				EIND = 1; // Bug in gcc for Flash > 128KB
+                EIND = 1; // Bug in gcc for Flash > 128KB
 #endif
-				bootloader();
-			} else {
-				serialWriteString("UUhh... You sent '");
-				serialWrite(c);
-				serialWriteString("'...?\n");
-			}
-		}
-	}
+                bootloader();
+            } else {
+                serialWriteString("UUhh... You sent '");
+                serialWrite(c);
+                serialWriteString("'...?\n");
+            }
+        }
+    }
 }

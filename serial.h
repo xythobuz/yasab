@@ -45,14 +45,10 @@
 #define NONE 0
 
 /* uint8_t serialInit(uint16_t baud, uint8_t databits, uint8_t parity, uint8_t stopbits)
- *	- baud:
- *		Use the BAUD(baudrate,fosc) Macro here
- *	- databits:
- *		Number between 5 and 8
- *	- parity:
- *		Use Definitions ODD, EVEN or NONE
- *	- stopbits:
- *		1 or 2
+ *  - baud: Use the BAUD(baudrate,fosc) Macro here
+ *  - databits: Number between 5 and 8
+ *  - parity: Use Definitions ODD, EVEN or NONE
+ *  - stopbits: 1 or 2
  *
  * returns 0 if success, 1 if argument invalid.
  */
