@@ -26,15 +26,11 @@
 #include <util/atomic.h>
 
 #define DEBUG 1
+#define VERSION "0.42"
 
 #include "global.h"
 
 uint8_t appState = WAITING;
-
-#if DEBUG >= 1
-#include <stdlib.h>
-char buff[5];
-#endif
 
 void main(void) __attribute__ ((noreturn));
 void main(void) {
@@ -47,11 +43,10 @@ void main(void) {
 
     serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
     sei();
-    XON();
 
-    debugPrint("Bootloader here\nPage Size: ");
-    debugPrint(ultoa(SPM_PAGESIZE, buff, 10));
-    debugPrint(" bytes\n");
+    debugPrint("YASAB ");
+    debugPrint(VERSION);
+    debugPrint(" by xythobuz\n");
 
     _delay_ms(BOOTDELAY);
 
@@ -59,9 +54,7 @@ void main(void) {
         gotoApplication();
     }
 
-
-
-    serialWriteString("Send HEX File!\n");
+    serialWriteString("HEX?\n");
 
     for(;;) {
         if (appState == PARSING) {
@@ -76,7 +69,7 @@ void main(void) {
                 parse(c);
             }
         } else {
-            serialWriteString("Thank you!\n");
+            serialWriteString("OK!\n");
             gotoApplication();
         }
     }

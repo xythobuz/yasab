@@ -20,10 +20,10 @@
  */
 #include <avr/io.h>
 #include <stdint.h>
+#include <avr/interrupt.h>
 #include <avr/boot.h>
-#include <util/atomic.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include "global.h"
 
@@ -33,26 +33,33 @@ char buff[5];
 #endif
 
 void program(uint32_t page, uint8_t *d) {
-    uint16_t i, w;
+    uint8_t sreg;
+    uint16_t i;
+
     PROGRAMMED();
 
 #if DEBUG >= 1
-    debugPrint("\nProgramming page 0x");
+    debugPrint("\nProgramming 0x");
     debugPrint(ultoa(page, buff, 16));
+    debugPrint(" - 0x");
+    debugPrint(ultoa(page + SPM_PAGESIZE, buff, 16));
     debugPrint("\n");
 #endif
 
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        eeprom_busy_wait();
-        boot_page_erase(page);
-        boot_spm_busy_wait();
-        for (i = 0; i < SPM_PAGESIZE; i += 2) {
-            w = *d++;
-            w += ((*d++) << 8);
-            boot_page_fill(page + i, w);
-        }
-        boot_page_write(page);
-        boot_spm_busy_wait();
-        boot_rww_enable(); // Allows us to jump back
+    sreg = SREG;
+    cli();
+
+    eeprom_busy_wait();
+    boot_page_erase(page);
+    boot_spm_busy_wait();
+    for (i = 0; i < SPM_PAGESIZE; i += 2) {
+        uint16_t w = *d++;
+        w += ((*d++) << 8);
+        boot_page_fill(page + i, w);
     }
+    boot_page_write(page);
+    boot_spm_busy_wait();
+    boot_rww_enable(); // Allows us to jump back
+
+    SREG = sreg;
 }

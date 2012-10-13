@@ -55,11 +55,18 @@ CARGS += --combine -fwhole-program
 
 all: yasab.hex sample.hex
 
+size: yasab.hex
+	make clean
+
 program: yasab.hex
-	avrdude -p atmega32 -c stk500v2 -P /dev/tty.usbmodem641 -e -U yasab.hex
+	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -e -U yasab.hex
 	make clean
 	make sample.hex
 	make cleanPart
+
+dump:
+	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -U flash:r:flash.bin:r
+	hexdump -C flash.bin
 
 yasab.elf: $(SRC)
 	avr-gcc $(CARGS) $(LINKER)$(SECTION) $(SRC) --output yasab.elf
@@ -83,3 +90,4 @@ cleanPart:
 
 clean: cleanPart
 	$(RM) *.hex
+	$(RM) *.bin

@@ -60,7 +60,6 @@ void gotoApplication(void) {
 
     // Free Hardware Resources
     serialClose();
-
     cli();
 
     // Fix Interrupt Vectors

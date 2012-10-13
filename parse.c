@@ -27,11 +27,21 @@
 #include "global.h"
 
 void parse(uint8_t c) {
-    static uint8_t parseState = START;
-    static uint8_t hexBufI, size, nextPage = 1, hexCount, type;
-    static uint16_t address, checksum, flashPage, flashI;
     static uint8_t hexBuf[5];
-    static uint8_t buf[SPM_PAGESIZE];
+    static uint8_t hexBufI = 0; // Buffer for reading hex nums
+    static uint8_t buf[SPM_PAGESIZE]; // Data to flash
+    static uint16_t flashI = 0;
+    static uint16_t flashPage = 0; // flash page to be written
+
+    // Hex File Record
+    static uint8_t size;
+    static uint16_t address;
+    static uint8_t type;
+    static uint16_t checksum;
+
+    static uint8_t hexCount = 0; // Counter for chars in one row of hex file
+    static uint8_t parseState = START;
+    static uint8_t nextPage = 1; // Flag for new flash page
 
     if (parseState == START) {
         if (c == ':') {
@@ -45,7 +55,7 @@ void parse(uint8_t c) {
         }
     } else if (parseState == SIZE) {
         hexBuf[hexBufI++] = c;
-        if (hexBufI >= 2) {
+        if (hexBufI == 2) {
             XOFF();
             debugPrint("\nSize\n");
             parseState = ADDRESS;
@@ -56,7 +66,7 @@ void parse(uint8_t c) {
         }
     } else if (parseState == ADDRESS) {
         hexBuf[hexBufI++] = c;
-        if (hexBufI >= 4) {
+        if (hexBufI == 4) {
             XOFF();
             debugPrint("\nAddress\n");
             parseState = TYPE;
@@ -72,7 +82,7 @@ void parse(uint8_t c) {
         }
     } else if (parseState == TYPE) {
         hexBuf[hexBufI++] = c;
-        if (hexBufI >= 2) {
+        if (hexBufI == 2) {
             XOFF();
             debugPrint("\nType\n");
             hexBufI = 0;
@@ -88,7 +98,7 @@ void parse(uint8_t c) {
         }
     } else if (parseState == DATA) {
         hexBuf[hexBufI++] = c;
-        if (hexBufI >= 2) {
+        if (hexBufI == 2) {
             XOFF();
             debugPrint("\nData\n");
             hexBufI = 0;
@@ -112,28 +122,30 @@ void parse(uint8_t c) {
         }
     } else if (parseState == CHECKSUM) {
         hexBuf[hexBufI++] = c;
-        if (hexBufI >= 2) {
+        if (hexBufI == 2) {
             XOFF();
             debugPrint("\nChecksum\n");
             c = convert(hexBuf, 2);
             checksum += c;
             checksum &= 0x00FF;
+            if (checksum == 0) {
+                parseState = START;
+                CHECKSUMVALID();
+            } else {
+                parseState = ERROR;
+                CHECKSUMINVALID();
+            }
             if (type == 1) {
                 // EOF, write rest
                 program(flashPage, buf);
                 appState = EXIT;
                 debugPrint("\nFinished\n");
             }
-            if (checksum == 0) {
-                parseState = START;
-            } else {
-                parseState = ERROR;
-                PROGERROR();
-            }
             XON();
         }
     } else {
         debugPrint("\nError\n");
+        PROGERROR();
         gotoApplication();
     }
 }

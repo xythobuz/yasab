@@ -27,11 +27,13 @@
 #define debugPrint(ignore)
 #endif
 
+#define PROGRAMMED() serialWrite('P')
+#define PROGERROR() serialWrite('E')
+#define CHECKSUMVALID()
+#define CHECKSUMINVALID() PROGERROR()
+
 #define XON() serialWrite(0x11)
 #define XOFF() serialWrite(0x13)
-
-#define PROGRAMMED() serialWrite('P');
-#define PROGERROR() serialWrite('E');
 
 // appState: Bootloader State
 #define WAITING 0

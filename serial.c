@@ -219,7 +219,7 @@ uint8_t serialGet() {
 
 uint8_t serialBufferSpaceRemaining() {
 #ifdef SERIALNONBLOCK
-    return (((txWrite + 1) == txRead) || ((txRead == 0) && ((txWrite + 1) == TX_BUFFER_SIZE)));
+    return !(((txWrite + 1) == txRead) || ((txRead == 0) && ((txWrite + 1) == TX_BUFFER_SIZE)));
 #else
     return 1;
 #endif
@@ -227,7 +227,7 @@ uint8_t serialBufferSpaceRemaining() {
 
 void serialWrite(uint8_t data) {
 #ifdef SERIALNONBLOCK
-    while (((txWrite + 1) == txRead) || ((txRead == 0) && ((txWrite + 1) == TX_BUFFER_SIZE))); // Buffer is full, wait!
+    while (!serialBufferSpaceRemaining()); // Buffer is full, wait!
     txBuffer[txWrite] = data;
     if (txWrite < (TX_BUFFER_SIZE - 1)) {
         txWrite++;
