@@ -41,10 +41,10 @@ void main(void) {
     DDRA = 0xC0;
     PORTA |= 0x40;
 
+    serialWriteString("Hi there...!\n");
+
     for(;;) {
-        serialWriteString("Hi there...\n");
         PORTA ^= 0xC0;
-        _delay_ms(BOOTDELAY);
         if (serialHasChar()) {
             c = serialGet();
             if (c == 'q') {
@@ -53,6 +53,8 @@ void main(void) {
 #ifdef EIND
                 EIND = 1; // Bug in gcc for Flash > 128KB
 #endif
+                serialClose();
+                cli();
                 bootloader();
             } else {
                 serialWriteString("UUhh... You sent '");

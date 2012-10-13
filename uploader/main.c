@@ -55,9 +55,9 @@ int main(int argc, char *argv[]) {
 
     if (argc < 3) {
 #ifdef _WIN32
-        printf("Usage:\n%s COM1 sample.hex [r]\n", argv[0]);
+        printf("Usage:\n%s COM1 sample.hex [q]\n", argv[0]);
 #else
-        printf("Usage:\n%s /dev/port /path/to.hex [r]\n", argv[0]);
+        printf("Usage:\n%s /dev/port /path/to.hex [q]\n", argv[0]);
 #endif
         return 1;
     }
@@ -126,6 +126,8 @@ int main(int argc, char *argv[]) {
                 suicide();
             } else if (c == okay[0]) {
                 break;
+            } else {
+                printf("\nReceived %c\n", c);
             }
         }
         if (flow == 1) {
@@ -134,7 +136,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
             writec(f);
-            printProgress(d++, max);
+            printProgress(++d, max);
             usleep(DELAY);
         }
     }

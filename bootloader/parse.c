@@ -53,15 +53,17 @@ void parse(uint8_t c) {
             XON();
         }
     } else if (parseState == SIZE) {
-        hexBuf[hexBufI++] = c;
-        if (hexBufI == 2) {
-            XOFF();
-            debugPrint("\nSize\n");
-            parseState = ADDRESS;
-            hexBufI = 0;
-            size = convert(hexBuf, 2);
-            checksum += size;
-            XON();
+        if (c != ':') {
+            hexBuf[hexBufI++] = c;
+            if (hexBufI == 2) {
+                XOFF();
+                debugPrint("\nSize\n");
+                parseState = ADDRESS;
+                hexBufI = 0;
+                size = convert(hexBuf, 2);
+                checksum += size;
+                XON();
+            }
         }
     } else if (parseState == ADDRESS) {
         hexBuf[hexBufI++] = c;

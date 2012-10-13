@@ -226,6 +226,9 @@ uint8_t serialBufferSpaceRemaining() {
 }
 
 void serialWrite(uint8_t data) {
+    if (data == '\n') {
+        serialWrite('\r');
+    }
 #ifdef SERIALNONBLOCK
     while (!serialBufferSpaceRemaining()); // Buffer is full, wait!
     txBuffer[txWrite] = data;

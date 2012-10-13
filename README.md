@@ -15,9 +15,12 @@ Configuration Options like Baudrate, Bootdelay or Clock Frequency can be changed
 
 ## Uploader
 
+<b>This is not working right now!</b>
+Just copy&paste the hex into a terminal emulator.
+
 This is a small utility to upload hex files to YASAB.
-The optional parameter, r, can be a character that is sent to reset the target.
-> Usage: uploader /dev/port /path/to.hex [r]
+The optional parameter, q, can be a character that is sent to reset the target.
+> Usage: uploader /dev/port /path/to.hex [q]
 
 ## License
 

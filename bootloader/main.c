@@ -54,8 +54,6 @@ void main(void) {
         gotoApplication();
     }
 
-    serialWriteString(CONNECTED);
-
     for(;;) {
         if (appState == PARSING) {
             while(!serialHasChar());
