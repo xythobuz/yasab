@@ -33,7 +33,6 @@ char buff[5];
 #endif
 
 void program(uint32_t page, uint8_t *d) {
-    uint8_t sreg;
     uint16_t i;
 
     PROGRAMMED();
@@ -45,21 +44,38 @@ void program(uint32_t page, uint8_t *d) {
     debugPrint(ultoa(page + SPM_PAGESIZE, buff, 16));
     debugPrint("\n");
 #endif
+#if DEBUG >= 2
+    debugPrint("Data: ");
+    for (i = 0; i < SPM_PAGESIZE; i++) {
+        uint8_t c = ((d[i] & 0xF0) >> 4);
+        if (c > 9) {
+            c = (c - 10) + 'A';
+        } else {
+            c += '0';
+        }
+        serialWrite(c);
+        c = (d[i] & 0x0F);
+        if (c > 9) {
+            c = (c - 10) + 'A';
+        } else {
+            c += '0';
+        }
+        serialWrite(c);
+        serialWrite(' ');
+    }
+    debugPrint("\n");
+#endif
 
-    sreg = SREG;
     cli();
 
-    eeprom_busy_wait();
-    boot_page_erase(page);
-    boot_spm_busy_wait();
+    boot_page_erase_safe(page);
     for (i = 0; i < SPM_PAGESIZE; i += 2) {
         uint16_t w = *d++;
         w += ((*d++) << 8);
-        boot_page_fill(page + i, w);
+        boot_page_fill_safe(page + i, w);
     }
-    boot_page_write(page);
-    boot_spm_busy_wait();
-    boot_rww_enable(); // Allows us to jump back
+    boot_page_write_safe(page);
+    boot_rww_enable_safe(); // Allows us to jump back
 
-    SREG = sreg;
+    sei(); // Interrupts are always on before calling this
 }

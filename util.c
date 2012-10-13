@@ -55,15 +55,12 @@ void gotoApplication(void) {
     // wdt_enable(WDTO_15MS);
     // for(;;);
 
-    uint8_t t;
-    void (*realProgram)(void) = 0x0000; // Function Pointer to real program
-
     // Free Hardware Resources
     serialClose();
     cli();
 
     // Fix Interrupt Vectors
-    t = GICR;
+    uint8_t t = GICR;
     GICR = t | (1 << IVCE);
     GICR = t & ~(1 << IVSEL);
 
@@ -71,5 +68,5 @@ void gotoApplication(void) {
 #ifdef EIND
     EIND = 0; // Bug in gcc for Flash > 128KB
 #endif
-    realProgram();
+    asm("jmp 0000");
 }

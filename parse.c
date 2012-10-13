@@ -34,10 +34,10 @@ void parse(uint8_t c) {
     static uint16_t flashPage = 0; // flash page to be written
 
     // Hex File Record
-    static uint8_t size;
-    static uint16_t address;
-    static uint8_t type;
-    static uint16_t checksum;
+    static uint8_t size = 0;
+    static uint16_t address = 0;
+    static uint8_t type = 0;
+    static uint16_t checksum = 0;
 
     static uint8_t hexCount = 0; // Counter for chars in one row of hex file
     static uint8_t parseState = START;
@@ -50,7 +50,6 @@ void parse(uint8_t c) {
             parseState = SIZE;
             hexBufI = 0;
             checksum = 0;
-            set(buf, 0xFF, sizeof(buf));
             XON();
         }
     } else if (parseState == SIZE) {

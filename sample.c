@@ -44,7 +44,7 @@ void main(void) {
     for(;;) {
         serialWriteString("Hi there...\n");
         PORTA ^= 0xC0;
-        _delay_ms(1000);
+        _delay_ms(BOOTDELAY);
         if (serialHasChar()) {
             c = serialGet();
             if (c == 'q') {
@@ -58,6 +58,7 @@ void main(void) {
                 serialWriteString("UUhh... You sent '");
                 serialWrite(c);
                 serialWriteString("'...?\n");
+                serialWriteString("Send 'q' to call bootloader!\n");
             }
         }
     }
