@@ -54,7 +54,7 @@ void main(void) {
         gotoApplication();
     }
 
-    serialWriteString("HEX?\n");
+    serialWriteString(CONNECTED);
 
     for(;;) {
         if (appState == PARSING) {
@@ -67,9 +67,11 @@ void main(void) {
             if (c == ':') {
                 appState = PARSING;
                 parse(c);
+            } else {
+                serialWriteString(CONNECTED);
             }
         } else {
-            serialWriteString("OK!\n");
+            serialWriteString(OKAY);
             gotoApplication();
         }
     }

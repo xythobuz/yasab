@@ -13,6 +13,12 @@ At the moment, AVRs with Flash > 64KB can not be programmed, as the parser can o
 
 Configuration Options like Baudrate, Bootdelay or Clock Frequency can be changed in the makefile.
 
+## Uploader
+
+This is a small utility to upload hex files to YASAB.
+The optional parameter, r, can be a character that is sent to reset the target.
+> Usage: uploader /dev/port /path/to.hex [r]
+
 ## License
 
 YASAB is released under the [LGPLv3](http://www.gnu.org/licenses/lgpl-3.0.html).

@@ -27,12 +27,15 @@
 #define debugPrint(ignore)
 #endif
 
-#define PROGRAMMED() serialWrite('P')
-#define PROGERROR() serialWrite('E')
+#define PROGRAMMED() serialWrite('p')
+#define PROGERROR() serialWrite('e')
 
 #define CHECKSUMVALID()
 
 #define CHECKSUMINVALID() PROGERROR()
+
+#define CONNECTED "HEX?\n"
+#define OKAY "OK!\n"
 
 #define XON() serialWrite(0x11)
 #define XOFF() serialWrite(0x13)
