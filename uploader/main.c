@@ -111,14 +111,11 @@ int main(int argc, char *argv[]) {
     long max = ftell(fp);
     fseek(fp, 0L, SEEK_SET);
 
-    int flow = 1;
     long d = 0;
     while (1) {
         if (serialRead(&c, 1) == 1) {
             if (c == XOFF) {
-                flow = 0;
             } else if (c == XON) {
-                flow = 1;
             } else if (c == OK) {
                 printNextPage();
             } else if (c == ERROR) {
@@ -130,15 +127,12 @@ int main(int argc, char *argv[]) {
                 printf("\nReceived %c\n", c);
             }
         }
-        if (flow == 1) {
-            if ((f = getc(fp)) == EOF) {
-                flow = 0;
-                continue;
-            }
-            writec(f);
-            printProgress(++d, max);
-            usleep(DELAY);
+        if ((f = getc(fp)) == EOF) {
+            continue;
         }
+        writec(f);
+        printProgress(++d, max);
+        usleep(DELAY);
     }
 
     printf("\nHEX File sent!\n");

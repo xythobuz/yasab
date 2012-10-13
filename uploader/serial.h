@@ -27,6 +27,8 @@
 // Searchterm for ports in unix
 #define SEARCH "tty"
 
+#define XONXOFF
+
 // Open the serial port. Return 0 on success, -1 on error
 int serialOpen(char *port);
 

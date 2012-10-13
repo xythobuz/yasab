@@ -60,7 +60,12 @@ int serialOpen(char *port) {
 
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Raw input
     options.c_oflag &= ~OPOST; // Raw output
-    options.c_iflag &= ~(IXON | IXOFF | IXANY); // No flow control
+    options.c_iflag &= ~(IXOFF | IXANY);
+#ifdef XONXOFF
+    options.c_iflag |=  IXON; // XON-XOFF Flow Control outgoing
+#else
+    options.c_iflag &= ~(IXON);
+#endif
 
     tcsetattr(fd, TCSANOW, &options);
 
