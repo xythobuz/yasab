@@ -21,6 +21,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include <avr/boot.h>
+#include <util/delay.h>
 
 #define DEBUG 0
 
@@ -31,10 +32,11 @@
 #define isUC(x) ((x >= 0x41) && (x <= 0x5A))
 #define isValid(x) (isNum(x) || isLC(x) || isUC(x))
 
+uint8_t buf[SPM_PAGESIZE]; // Data to flash
+
 void parse(uint8_t c) {
     static uint8_t hexBuf[5];
     static uint8_t hexBufI = 0; // Buffer for reading hex nums
-    static uint8_t buf[SPM_PAGESIZE]; // Data to flash
     static uint16_t flashI = 0;
     static uint16_t flashPage = 0; // flash page to be written
 
@@ -116,6 +118,7 @@ void parse(uint8_t c) {
                 if (flashI >= SPM_PAGESIZE) {
                     // Write page into flash
                     program(flashPage, buf);
+                    PROGRAMMED();
                     set(buf, 0xFF, sizeof(buf));
                     flashI = 0;
                     nextPage = 1;
@@ -132,22 +135,24 @@ void parse(uint8_t c) {
                 checksum &= 0x00FF;
                 if (checksum == 0) {
                     parseState = START;
-                    CHECKSUMVALID();
                 } else {
                     parseState = ERROR;
-                    CHECKSUMINVALID();
                 }
                 if (type == 1) {
                     // EOF, write rest
                     program(flashPage, buf);
+                    PROGRAMMED();
                     appState = EXIT;
                     debugPrint("Finished\n");
+                    serialWriteString(OKAY);
                 }
             }
         }
     } else {
-        debugPrint("Error\n");
+        debugPrint("Try again in 5s...\n");
         PROGERROR();
-        gotoApplication();
+        serialWrite(0x11); // XON
+        _delay_ms(5000);
+        gotoBootloader();
     }
 }

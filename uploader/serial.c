@@ -87,6 +87,10 @@ ssize_t serialRead(char *data, size_t length) {
     }
 }
 
+int serialSync(void) {
+    return fsync(fd);
+}
+
 // Close the serial Port
 void serialClose(void) {
     close(fd);

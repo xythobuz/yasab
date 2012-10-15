@@ -43,3 +43,6 @@ void serialClose(void);
 
 // String array with serial port names
 char** getSerialPorts(void);
+
+// Write out all data
+int serialSync(void);

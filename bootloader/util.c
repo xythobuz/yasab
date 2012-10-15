@@ -50,11 +50,7 @@ uint16_t convert(uint8_t *d, uint8_t l) {
     return s;
 }
 
-void gotoApplication(void) {
-    // serialClose();
-    // wdt_enable(WDTO_15MS);
-    // for(;;);
-
+void gotoAddress(void (*app)(void), uint8_t c) {
     // Free Hardware Resources
     serialClose();
     cli();
@@ -66,7 +62,17 @@ void gotoApplication(void) {
 
     // Call main program
 #ifdef EIND
-    EIND = 0; // Bug in gcc for Flash > 128KB
+    EIND = c; // Bug in gcc for Flash > 128KB
 #endif
-    asm("jmp 0000");
+    app();
+}
+
+typedef void (*StupidShit)(void);
+
+void gotoApplication(void) {
+    gotoAddress((StupidShit)0x0000, 0);
+}
+
+void gotoBootloader(void) {
+    gotoAddress((StupidShit)(BOOTSTART / 2), 1);
 }

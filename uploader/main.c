@@ -184,11 +184,19 @@ char readc(void) {
     return c;
 }
 
+void sync(void) {
+    if (serialSync() != 0) {
+        printf("Could not flush data!\n");
+        suicide();
+    }
+}
+
 void writec(char c) {
     if (serialWriteTry(&c, 1) != 0) {
         printf("Error while sending!\n");
         suicide();
     }
+    sync();
 }
 
 int serialWriteString(char *s) {
@@ -232,6 +240,7 @@ int serialWriteTry(char *data, size_t length) {
     int ret;
     while (1) {
         ret = serialWrite((data + written), (length - written));
+        sync();
         if (ret == -1) {
             i++;
         } else {

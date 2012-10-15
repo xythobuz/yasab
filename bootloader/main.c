@@ -44,11 +44,12 @@ void main(void) {
     serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
 
+    _delay_ms(BOOTDELAY);
+    set(buf, 0xFF, sizeof(buf));
+
     debugPrint("YASAB ");
     debugPrint(VERSION);
     debugPrint(" by xythobuz\n");
-
-    _delay_ms(BOOTDELAY);
 
     if (!serialHasChar()) {
         gotoApplication();
@@ -69,7 +70,6 @@ void main(void) {
                 serialWriteString(CONNECTED);
             }
         } else {
-            serialWriteString(OKAY);
             gotoApplication();
         }
     }

@@ -30,10 +30,6 @@
 #define PROGRAMMED() serialWrite('p')
 #define PROGERROR() serialWrite('e')
 
-#define CHECKSUMVALID()
-
-#define CHECKSUMINVALID() PROGERROR()
-
 #define CONNECTED "HEX?\n"
 #define OKAY "OK!\n"
 
@@ -43,6 +39,7 @@
 #define EXIT 2
 
 extern uint8_t appState;
+extern uint8_t buf[SPM_PAGESIZE];
 
 // Parser State
 #define START 0
@@ -58,3 +55,4 @@ void set(uint8_t *d, uint8_t c, uint16_t l);
 uint16_t convert(uint8_t *d, uint8_t l);
 void program(uint32_t page, uint8_t *d);
 void gotoApplication(void);
+void gotoBootloader(void);

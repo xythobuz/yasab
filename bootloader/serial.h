@@ -38,7 +38,7 @@
 
 #define BAUD(baudRate,xtalCpu) ((xtalCpu)/((baudRate)*16l)-1)
 
-uint8_t serialInit(uint16_t baud);
+void serialInit(uint16_t baud);
 void serialClose(void);
 
 // Reception

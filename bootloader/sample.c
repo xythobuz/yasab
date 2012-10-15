@@ -45,7 +45,7 @@ void main(void) {
         if (serialHasChar()) {
             c = serialGet();
             if (c == 'q') {
-                serialWriteString("Goodbye...\n");
+                serialWriteString("\nGoodbye...\n");
                 serialClose();
 #ifdef EIND
                 EIND = 1; // Bug in gcc for Flash > 128KB
@@ -54,10 +54,7 @@ void main(void) {
                 cli();
                 bootloader();
             } else {
-                serialWriteString("UUhh... You sent '");
                 serialWrite(c);
-                serialWriteString("'...?\n");
-                serialWriteString("Send 'q' to call bootloader!\n");
             }
         }
     }

@@ -35,8 +35,6 @@ char buff[5];
 void program(uint32_t page, uint8_t *d) {
     uint16_t i;
 
-    PROGRAMMED();
-
 #if DEBUG >= 1
     debugPrint("\nProgramming 0x");
     debugPrint(ultoa(page, buff, 16));

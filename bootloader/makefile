@@ -64,6 +64,10 @@ program: yasab.hex
 	make sample.hex
 	make cleanPart
 
+programSample: sample.hex
+	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -e -U sample.hex
+	make clean
+
 dump:
 	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -U flash:r:flash.bin:r
 	hexdump -C flash.bin
