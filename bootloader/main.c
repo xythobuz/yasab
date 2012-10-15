@@ -25,7 +25,7 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #define VERSION "1.0"
 
 #include "global.h"
@@ -41,7 +41,7 @@ void main(void) {
     GICR = c | (1 << IVCE);
     GICR = c | (1 << IVSEL);
 
-    serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
+    serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
 
     debugPrint("YASAB ");

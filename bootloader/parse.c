@@ -26,6 +26,11 @@
 
 #include "global.h"
 
+#define isNum(x) ((x >= 0x30) && (x <= 0x39))
+#define isLC(x) ((x >= 0x61) && (x <= 0x7A))
+#define isUC(x) ((x >= 0x41) && (x <= 0x5A))
+#define isValid(x) (isNum(x) || isLC(x) || isUC(x))
+
 void parse(uint8_t c) {
     static uint8_t hexBuf[5];
     static uint8_t hexBufI = 0; // Buffer for reading hex nums
@@ -45,107 +50,103 @@ void parse(uint8_t c) {
 
     if (parseState == START) {
         if (c == ':') {
-            XOFF();
-            debugPrint("\nStart\n");
+            debugPrint("Start\n");
             parseState = SIZE;
             hexBufI = 0;
             checksum = 0;
-            XON();
         }
     } else if (parseState == SIZE) {
-        if (c != ':') {
+        if (isValid(c)) {
             hexBuf[hexBufI++] = c;
             if (hexBufI == 2) {
-                XOFF();
-                debugPrint("\nSize\n");
+                debugPrint("Size\n");
                 parseState = ADDRESS;
                 hexBufI = 0;
                 size = convert(hexBuf, 2);
                 checksum += size;
-                XON();
             }
         }
     } else if (parseState == ADDRESS) {
-        hexBuf[hexBufI++] = c;
-        if (hexBufI == 4) {
-            XOFF();
-            debugPrint("\nAddress\n");
-            parseState = TYPE;
-            hexBufI = 0;
-            address = convert(hexBuf, 4);
-            checksum += (address & 0xFF);
-            checksum += ((address & 0xFF00) >> 8);
-            if (nextPage) {
-                flashPage = address - (address % SPM_PAGESIZE);
-                nextPage = 0;
+        if (isValid(c)) {
+            hexBuf[hexBufI++] = c;
+            if (hexBufI == 4) {
+                debugPrint("Address\n");
+                parseState = TYPE;
+                hexBufI = 0;
+                address = convert(hexBuf, 4);
+                checksum += (address & 0xFF);
+                checksum += ((address & 0xFF00) >> 8);
+                if (nextPage) {
+                    flashPage = address - (address % SPM_PAGESIZE);
+                    nextPage = 0;
+                }
             }
-            XON();
         }
     } else if (parseState == TYPE) {
-        hexBuf[hexBufI++] = c;
-        if (hexBufI == 2) {
-            XOFF();
-            debugPrint("\nType\n");
-            hexBufI = 0;
-            hexCount = 0;
-            type = convert(hexBuf, 2);
-            checksum += type;
-            if (type == 1) {
-                parseState = CHECKSUM;
-            } else {
-                parseState = DATA;
+        if (isValid(c)) {
+            hexBuf[hexBufI++] = c;
+            if (hexBufI == 2) {
+                debugPrint("Type\n");
+                hexBufI = 0;
+                hexCount = 0;
+                type = convert(hexBuf, 2);
+                checksum += type;
+                if (type == 1) {
+                    parseState = CHECKSUM;
+                } else {
+                    parseState = DATA;
+                }
             }
-            XON();
         }
     } else if (parseState == DATA) {
-        hexBuf[hexBufI++] = c;
-        if (hexBufI == 2) {
-            XOFF();
-            debugPrint("\nData\n");
-            hexBufI = 0;
-            buf[flashI] = convert(hexBuf, 2);
-            checksum += buf[flashI];
-            flashI++;
-            hexCount++;
-            if (hexCount == size) {
-                parseState = CHECKSUM;
-                hexCount = 0;
+        if (isValid(c)) {
+            hexBuf[hexBufI++] = c;
+            if (hexBufI == 2) {
+                debugPrint("Data\n");
                 hexBufI = 0;
+                buf[flashI] = convert(hexBuf, 2);
+                checksum += buf[flashI];
+                flashI++;
+                hexCount++;
+                if (hexCount == size) {
+                    parseState = CHECKSUM;
+                    hexCount = 0;
+                    hexBufI = 0;
+                }
+                if (flashI >= SPM_PAGESIZE) {
+                    // Write page into flash
+                    program(flashPage, buf);
+                    set(buf, 0xFF, sizeof(buf));
+                    flashI = 0;
+                    nextPage = 1;
+                }
             }
-            if (flashI >= SPM_PAGESIZE) {
-                // Write page into flash
-                program(flashPage, buf);
-                set(buf, 0xFF, sizeof(buf));
-                flashI = 0;
-                nextPage = 1;
-            }
-            XON();
         }
     } else if (parseState == CHECKSUM) {
-        hexBuf[hexBufI++] = c;
-        if (hexBufI == 2) {
-            XOFF();
-            debugPrint("\nChecksum\n");
-            c = convert(hexBuf, 2);
-            checksum += c;
-            checksum &= 0x00FF;
-            if (checksum == 0) {
-                parseState = START;
-                CHECKSUMVALID();
-            } else {
-                parseState = ERROR;
-                CHECKSUMINVALID();
+        if (isValid(c)) {
+            hexBuf[hexBufI++] = c;
+            if (hexBufI == 2) {
+                debugPrint("Checksum\n");
+                c = convert(hexBuf, 2);
+                checksum += c;
+                checksum &= 0x00FF;
+                if (checksum == 0) {
+                    parseState = START;
+                    CHECKSUMVALID();
+                } else {
+                    parseState = ERROR;
+                    CHECKSUMINVALID();
+                }
+                if (type == 1) {
+                    // EOF, write rest
+                    program(flashPage, buf);
+                    appState = EXIT;
+                    debugPrint("Finished\n");
+                }
             }
-            if (type == 1) {
-                // EOF, write rest
-                program(flashPage, buf);
-                appState = EXIT;
-                debugPrint("\nFinished\n");
-            }
-            XON();
         }
     } else {
-        debugPrint("\nError\n");
+        debugPrint("Error\n");
         PROGERROR();
         gotoApplication();
     }

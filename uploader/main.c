@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
             else
                 break;
         } else {
-            printf("Answer not from YASAB?! (%c)\n", c);
+            printf("Answer not from YASAB?! (%x - %c)\n", c, c);
             // suicide();
             c = readc();
         }
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
             } else if (c == okay[0]) {
                 break;
             } else {
-                printf("\nReceived %c\n", c);
+                printf("\nReceived %x - %c\n", c, c);
             }
         }
         if ((f = getc(fp)) == EOF) {
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
             else
                 break;
         } else {
-            printf("No valid success response?! (%c)\n", c);
+            printf("No valid success response?! (%x - %c)\n", c, c);
             // suicide();
             c = readc();
         }

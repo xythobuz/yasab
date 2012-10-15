@@ -23,9 +23,6 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-#define RX_BUFFER_SIZE 4
-#define TX_BUFFER_SIZE 4
-
 #include "serial.h"
 
 typedef void (*Func)(void);
@@ -35,7 +32,7 @@ void main(void) {
     uint8_t c;
     Func bootloader = (Func)BOOTSTART;
 
-    serialInit(BAUD(BAUDRATE, F_CPU), 8, NONE, 1);
+    serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
 
     DDRA = 0xC0;

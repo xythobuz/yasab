@@ -37,9 +37,6 @@
 #define CONNECTED "HEX?\n"
 #define OKAY "OK!\n"
 
-#define XON() serialWrite(0x11)
-#define XOFF() serialWrite(0x13)
-
 // appState: Bootloader State
 #define WAITING 0
 #define PARSING 1
