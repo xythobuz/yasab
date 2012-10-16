@@ -30,7 +30,7 @@ typedef void (*Func)(void);
 void main(void) __attribute__ ((noreturn));
 void main(void) {
     uint8_t c;
-    Func bootloader = (Func)BOOTSTART;
+    Func bootloader = (Func)(BOOTSTART / 2);
 
     serialInit(BAUD(BAUDRATE, F_CPU));
     sei();

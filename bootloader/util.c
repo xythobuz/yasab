@@ -32,25 +32,7 @@ void set(uint8_t *d, uint8_t c, uint16_t l) {
     }
 }
 
-uint16_t convert(uint8_t *d, uint8_t l) {
-    uint8_t i, c;
-    uint16_t s = 0;
-
-    for (i = 0; i < l; i++) {
-        c = d[i];
-        if ((c >= '0') && (c <= '9')) {
-            c -= '0';
-        } else if ((c >= 'A') && (c <= 'F')) {
-            c -= 'A' - 10;
-        } else if ((c >= 'a') && (c <= 'f')) {
-            c -= 'a' - 10;
-        }
-        s = (16 * s) + c;
-    }
-    return s;
-}
-
-void gotoAddress(void (*app)(void), uint8_t c) {
+inline void gotoAddress(void (*app)(void), uint8_t c) {
     // Free Hardware Resources
     serialClose();
     cli();
@@ -71,8 +53,4 @@ typedef void (*StupidShit)(void);
 
 void gotoApplication(void) {
     gotoAddress((StupidShit)0x0000, 0);
-}
-
-void gotoBootloader(void) {
-    gotoAddress((StupidShit)(BOOTSTART / 2), 1);
 }

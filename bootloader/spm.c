@@ -34,6 +34,7 @@ char buff[5];
 
 void program(uint32_t page, uint8_t *d) {
     uint16_t i;
+    uint8_t sreg = SREG;
 
 #if DEBUG >= 1
     debugPrint("\nProgramming 0x");
@@ -75,5 +76,5 @@ void program(uint32_t page, uint8_t *d) {
     boot_page_write_safe(page);
     boot_rww_enable_safe(); // Allows us to jump back
 
-    sei(); // Interrupts are always on before calling this
+    SREG = sreg;
 }

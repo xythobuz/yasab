@@ -25,16 +25,14 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #define VERSION "1.0"
 
 #include "global.h"
 
-uint8_t appState = WAITING;
-
 void main(void) __attribute__ ((noreturn));
 void main(void) {
-    uint8_t c;
+    uint8_t c = 0;
 
     // Move Interrupt Vectors into Bootloader Section
     c = GICR;
@@ -43,34 +41,25 @@ void main(void) {
 
     serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
+    set(buf, 0xFF, sizeof(buf));
 
     _delay_ms(BOOTDELAY);
-    set(buf, 0xFF, sizeof(buf));
 
     debugPrint("YASAB ");
     debugPrint(VERSION);
     debugPrint(" by xythobuz\n");
 
-    if (!serialHasChar()) {
+    while (serialHasChar()) {
+        c = serialGet(); // Clear rx buffer
+    }
+    if (c != FLASH) {
         gotoApplication();
     }
 
+    serialWrite(OKAY);
+    while (!serialTxBufferEmpty()); // Wait till it's sent
+
     for(;;) {
-        if (appState == PARSING) {
-            while(!serialHasChar());
-            c = serialGet();
-            parse(c);
-        } else if (appState == WAITING) {
-            while(!serialHasChar());
-            c = serialGet();
-            if (c == ':') {
-                appState = PARSING;
-                parse(c);
-            } else {
-                serialWriteString(CONNECTED);
-            }
-        } else {
-            gotoApplication();
-        }
+        parse();
     }
 }

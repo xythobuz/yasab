@@ -27,132 +27,75 @@
 
 #include "global.h"
 
-#define isNum(x) ((x >= 0x30) && (x <= 0x39))
-#define isLC(x) ((x >= 0x61) && (x <= 0x7A))
-#define isUC(x) ((x >= 0x41) && (x <= 0x5A))
-#define isValid(x) (isNum(x) || isLC(x) || isUC(x))
-
 uint8_t buf[SPM_PAGESIZE]; // Data to flash
 
-void parse(uint8_t c) {
-    static uint8_t hexBuf[5];
-    static uint8_t hexBufI = 0; // Buffer for reading hex nums
-    static uint16_t flashI = 0;
-    static uint16_t flashPage = 0; // flash page to be written
+/*
+ * 0: Getting address
+ * 1: Getting length
+ * 2: Reading data
+ */
+uint8_t parseState = 0;
+uint32_t dataPointer = 0;
+uint32_t dataAddress = 0;
+uint32_t dataLength = 0;
+uint16_t bufPointer = 0;
 
-    // Hex File Record
-    static uint8_t size = 0;
-    static uint16_t address = 0;
-    static uint8_t type = 0;
-    static uint16_t checksum = 0;
+#define page(x) (x - (x % SPM_PAGESIZE))
 
-    static uint8_t hexCount = 0; // Counter for chars in one row of hex file
-    static uint8_t parseState = START;
-    static uint8_t nextPage = 1; // Flag for new flash page
+void parse(void) {
+    uint8_t c;
 
-    if (parseState == START) {
-        if (c == ':') {
-            debugPrint("Start\n");
-            parseState = SIZE;
-            hexBufI = 0;
-            checksum = 0;
-        }
-    } else if (parseState == SIZE) {
-        if (isValid(c)) {
-            hexBuf[hexBufI++] = c;
-            if (hexBufI == 2) {
-                debugPrint("Size\n");
-                parseState = ADDRESS;
-                hexBufI = 0;
-                size = convert(hexBuf, 2);
-                checksum += size;
-            }
-        }
-    } else if (parseState == ADDRESS) {
-        if (isValid(c)) {
-            hexBuf[hexBufI++] = c;
-            if (hexBufI == 4) {
-                debugPrint("Address\n");
-                parseState = TYPE;
-                hexBufI = 0;
-                address = convert(hexBuf, 4);
-                checksum += (address & 0xFF);
-                checksum += ((address & 0xFF00) >> 8);
-                if (nextPage) {
-                    flashPage = address - (address % SPM_PAGESIZE);
-                    nextPage = 0;
-                }
-            }
-        }
-    } else if (parseState == TYPE) {
-        if (isValid(c)) {
-            hexBuf[hexBufI++] = c;
-            if (hexBufI == 2) {
-                debugPrint("Type\n");
-                hexBufI = 0;
-                hexCount = 0;
-                type = convert(hexBuf, 2);
-                checksum += type;
-                if (type == 1) {
-                    parseState = CHECKSUM;
-                } else {
-                    parseState = DATA;
-                }
-            }
-        }
-    } else if (parseState == DATA) {
-        if (isValid(c)) {
-            hexBuf[hexBufI++] = c;
-            if (hexBufI == 2) {
-                debugPrint("Data\n");
-                hexBufI = 0;
-                buf[flashI] = convert(hexBuf, 2);
-                checksum += buf[flashI];
-                flashI++;
-                hexCount++;
-                if (hexCount == size) {
-                    parseState = CHECKSUM;
-                    hexCount = 0;
-                    hexBufI = 0;
-                }
-                if (flashI >= SPM_PAGESIZE) {
-                    // Write page into flash
-                    program(flashPage, buf);
-                    PROGRAMMED();
-                    set(buf, 0xFF, sizeof(buf));
-                    flashI = 0;
-                    nextPage = 1;
-                }
-            }
-        }
-    } else if (parseState == CHECKSUM) {
-        if (isValid(c)) {
-            hexBuf[hexBufI++] = c;
-            if (hexBufI == 2) {
-                debugPrint("Checksum\n");
-                c = convert(hexBuf, 2);
-                checksum += c;
-                checksum &= 0x00FF;
-                if (checksum == 0) {
-                    parseState = START;
-                } else {
-                    parseState = ERROR;
-                }
-                if (type == 1) {
-                    // EOF, write rest
-                    program(flashPage, buf);
-                    PROGRAMMED();
-                    appState = EXIT;
-                    debugPrint("Finished\n");
-                    serialWriteString(OKAY);
-                }
-            }
-        }
+    if (!serialHasChar()) {
+        return;
+    }
+    c = serialGet();
+
+    if (parseState == 0) {
+        dataAddress = (((uint32_t)c) << 24);
+        while(!serialHasChar());
+        dataAddress |= (((uint32_t)serialGet()) << 16);
+        while(!serialHasChar());
+        dataAddress |= (((uint32_t)serialGet()) << 8);
+        while(!serialHasChar());
+        dataAddress |= ((uint32_t)serialGet());
+        serialWrite(OKAY);
+        while (!serialTxBufferEmpty()); // Wait till it's sent
+        debugPrint("Got address!\n");
+        parseState++;
+    } else if (parseState == 1) {
+        dataLength = (((uint32_t)c) << 24);
+        while(!serialHasChar());
+        dataLength |= (((uint32_t)serialGet()) << 16);
+        while(!serialHasChar());
+        dataLength |= (((uint32_t)serialGet()) << 8);
+        while(!serialHasChar());
+        dataLength |= ((uint32_t)serialGet());
+        serialWrite(OKAY);
+        while (!serialTxBufferEmpty()); // Wait till it's sent
+        debugPrint("Got length!\n");
+        parseState++;
     } else {
-        debugPrint("Try again in 5s...\n");
-        PROGERROR();
-        serialWrite(0x11); // XON
-        _delay_ms(5000);
-        gotoBootloader();
+        dataPointer = dataAddress;
+        while (dataPointer < (dataLength + dataAddress)) {
+            while (!serialHasChar());
+            buf[bufPointer] = serialGet();
+            dataPointer++;
+            if (bufPointer < (SPM_PAGESIZE - 1)) {
+                bufPointer++;
+            } else {
+                bufPointer = 0;
+                program(page(dataPointer), buf);
+                set(buf, 0xFF, sizeof(buf));
+                serialWrite(OKAY);
+                while (!serialTxBufferEmpty());
+            }
+        }
+        debugPrint("Got data!\n");
+        if (bufPointer != 0) {
+            program(page(dataPointer), buf);
+            serialWrite(OKAY);
+            while (!serialTxBufferEmpty());
+        }
+        gotoApplication();
     }
 }

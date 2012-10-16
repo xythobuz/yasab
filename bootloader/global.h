@@ -27,32 +27,13 @@
 #define debugPrint(ignore)
 #endif
 
-#define PROGRAMMED() serialWrite('p')
-#define PROGERROR() serialWrite('e')
+#define ERROR 'e'
+#define OKAY 'o'
+#define FLASH 'f'
 
-#define CONNECTED "HEX?\n"
-#define OKAY "OK!\n"
-
-// appState: Bootloader State
-#define WAITING 0
-#define PARSING 1
-#define EXIT 2
-
-extern uint8_t appState;
 extern uint8_t buf[SPM_PAGESIZE];
 
-// Parser State
-#define START 0
-#define SIZE 1
-#define ADDRESS 2
-#define TYPE 3
-#define DATA 4
-#define CHECKSUM 5
-#define ERROR 6
-
-void parse(uint8_t c);
+void parse(void);
 void set(uint8_t *d, uint8_t c, uint16_t l);
-uint16_t convert(uint8_t *d, uint8_t l);
 void program(uint32_t page, uint8_t *d);
 void gotoApplication(void);
-void gotoBootloader(void);

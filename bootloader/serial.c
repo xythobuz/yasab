@@ -210,7 +210,7 @@ void serialWrite(uint8_t data) {
     while (serialTxBufferFull());
 
     uint8_t sreg = SREG;
-    // cli();
+    cli();
     txBuffer[txWrite] = data;
     if (txWrite < (TX_BUFFER_SIZE - 1)) {
         txWrite++;
