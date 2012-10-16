@@ -58,6 +58,13 @@ void main(void) {
 
     serialWrite(OKAY);
     while (!serialTxBufferEmpty()); // Wait till it's sent
+    while (!serialHasChar());
+    if (serialGet() != CONFIRM) {
+        gotoApplication();
+    }
+
+    serialWrite(OKAY);
+    while (!serialTxBufferEmpty());
 
     for(;;) {
         parse();

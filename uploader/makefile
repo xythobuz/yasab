@@ -1,18 +1,11 @@
 TARGET = uploader
 SRC = main.c
+SRC += serial.c
+SRC += parser.c
 
 CC = gcc
 STANDARD = gnu99
-
-ifdef SystemRoot
-# Windows
-RM = del
-SRC += winSerial.c
-else
-# Probably Unix
 RM = rm -f
-SRC += serial.c
-endif
 
 # --------------------------------------
 

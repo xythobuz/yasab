@@ -30,6 +30,7 @@
 #define ERROR 'e'
 #define OKAY 'o'
 #define FLASH 'f'
+#define CONFIRM 'c'
 
 extern uint8_t buf[SPM_PAGESIZE];
 
