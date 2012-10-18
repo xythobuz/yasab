@@ -41,7 +41,8 @@ void intHandler(int dummy);
 
 int main(int argc, char *argv[]) {
     FILE *fp;
-    if (argc < 3) {
+    char c;
+    if ((argc < 3) || (argc > 4)) {
         printf("Usage:\n%s /dev/port /path/to.hex [q]\n", argv[0]);
         return 1;
     }
@@ -61,32 +62,125 @@ int main(int argc, char *argv[]) {
 
     fclose(fp);
 
+    if (!isValid()) {
+        printf("HEX-File not valid!\n");
+        freeHex();
+        return 1;
+    }
+
+    uint32_t min = minAddress();
+    uint32_t max = maxAddress();
+    uint32_t length = dataLength();
+    printf("Hex File Path   : %s\n", argv[2]);
+    printf("Minimum Address : 0x%X\n", min);
+    printf("Maximum Address : 0x%X\n", max);
+    printf("Data payload    : %i bytes\n", length);
+
+    uint8_t *d = (uint8_t *)malloc(length * sizeof(uint8_t));
+    if (d == NULL) {
+        printf("Not enough memory!\n");
+        freeHex();
+        return 1;
+    }
+    parseData(d);
+    freeHex();
+
     // Open serial port
     if (serialOpen(argv[1]) != 0) {
         printf("Could not open port %s\n", argv[1]);
+        free(d);
         return 1;
     }
 
     signal(SIGINT, intHandler);
     signal(SIGQUIT, intHandler);
 
-    printf("Waiting for bootloader... Stop with CTRL+C\n");
-
     if (argc > 3) {
         writec(argv[3][0]); // TO-DO: Parse C Escape Sequences
     }
 
-    if (!isValid()) {
-        printf("HEX-File not valid!\n");
-        suicide();
+    printf("Pinging bootloader... Stop with CTRL+C\n");
+
+    int i = 0;
+    while(1) {
+        writec(FLASH);
+        i++;
+        if (serialRead(&c, 1) == 1) {
+            if (c == OKAY) {
+                break;
+            } else {
+                printf("Received strange byte (%c - %x). WTF?!\n", c, c);
+            }
+        }
+        usleep(500000);
     }
 
-    printf("Minimum Address: %X", minAddress());
+    printf("Got response after %i attempts. Acknowledging...\n", i);
+    writec(CONFIRM);
+    writec(CONFIRM);
+    writec(CONFIRM);
 
-    printf("Got response from YASAB! Sending HEX-File...\n");
+    c = readc();
+    if (c != OKAY) {
+        printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
+        free(d);
+        serialClose();
+        return 1;
+    }
 
-    printf("YASAB confirmed upload!\n");
-    freeHex();
+    printf("Connection established successfully!\n");
+    printf("Sending target address...\n");
+
+    writec((min & 0xFF000000) >> 24);
+    writec((min & 0x00FF0000) >> 16);
+    writec((min & 0x0000FF00) >> 8);
+    writec(min & 0x000000FF);
+
+    c = readc();
+    if (c != OKAY) {
+        printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
+        free(d);
+        serialClose();
+        return 1;
+    }
+
+    printf("Sending data length...\n");
+
+    writec((length & 0xFF000000) >> 24);
+    writec((length & 0x00FF0000) >> 16);
+    writec((length & 0x0000FF00) >> 8);
+    writec(length & 0x000000FF);
+
+    c = readc();
+    if (c != OKAY) {
+        printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
+        free(d);
+        serialClose();
+        return 1;
+    }
+
+    for (uint32_t i = 0; i < length; i++) {
+        writec(d[i]);
+        if (serialRead(&c, 1) == 1) {
+            if (c == OKAY) {
+                printNextPage();
+            } else if (c == ERROR) {
+                printf("YASAB aborted the connection!\n");
+                free(d);
+                serialClose();
+                return 1;
+            } else {
+                printf("Unknown answer from YASAB (%c - %x)!\n", c, c);
+            }
+        }
+        printProgress(i + 1, length);
+    }
+
+    printf("Upload finished. Thank you!\n");
+    printf("YASAB - Yet another simple AVR Bootloader\n");
+    printf("By xythobuz - Visit www.xythobuz.org\n");
+
+    free(d);
     serialClose();
     return 0;
 }
@@ -107,15 +201,14 @@ void printProgress(long a, long b) {
 }
 
 // 1 on error, 0 on success
-int serialReadTry(char *data, size_t length) {
+int serialTry(char *data, size_t length, ssize_t (*ser)(char *, size_t)) {
     int i = 0;
     int written = 0;
     int ret;
     time_t start, end;
     start = time(NULL);
-
     while (1) {
-        ret = serialRead((data + written), (length - written));
+        ret = ser((data + written), (length - written));
         if (ret == -1) {
             i++;
         } else {
@@ -129,54 +222,31 @@ int serialReadTry(char *data, size_t length) {
         }
         end = time(NULL);
         if (difftime(start, end) > 2) {
-            printf("Timeout while reading!\n");
+            printf("Timeout!\n");
             return 1;
         }
     }
     return 0;
 }
 
-// 1 on error, 0 on success
-int serialWriteTry(char *data, size_t length) {
-    int i = 0;
-    int written = 0;
-    int ret;
-    while (1) {
-        ret = serialWrite((data + written), (length - written));
-        sync();
-        if (ret == -1) {
-            i++;
-        } else {
-            written += ret;
-        }
-        if (i > 10) {
-            return 1;
-        }
-        if (written == length) {
-            break;
-        }
+void sync(void) {
+    if (serialSync() != 0) {
+        printf("Could not sync data!\n");
+        suicide();
     }
-    return 0;
 }
 
 char readc(void) {
     char c;
-    if (serialReadTry(&c, 1) != 0) {
-        printf("Error while receiving!\n");
+    if (serialTry(&c, 1, serialRead) != 0) {
+        printf("Error while reading!\n");
         suicide();
     }
     return c;
 }
 
-void sync(void) {
-    if (serialSync() != 0) {
-        printf("Could not flush data!\n");
-        suicide();
-    }
-}
-
 void writec(char c) {
-    if (serialWriteTry(&c, 1) != 0) {
+    if (serialTry(&c, 1, serialWrite) != 0) {
         printf("Error while sending!\n");
         suicide();
     }
@@ -185,6 +255,5 @@ void writec(char c) {
 
 void intHandler(int dummy) {
     serialClose();
-    freeHex();
     exit(1);
 }

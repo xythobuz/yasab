@@ -35,5 +35,8 @@ HexLine *parseLine(int line);
 int readHex(FILE *fp);
 void freeHex(void);
 
-uint16_t minAddress(void);
+void parseData(uint8_t *d);
+uint32_t dataLength(void);
+uint32_t minAddress(void);
+uint32_t maxAddress(void);
 int isValid(void);

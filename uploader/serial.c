@@ -51,20 +51,38 @@ int serialOpen(char *port) {
     tcgetattr(fd, &options);
     cfsetispeed(&options, BAUD); // Set speed
     cfsetospeed(&options, BAUD);
-    options.c_cflag |= (CLOCAL | CREAD);
 
+    // Local flags
+    options.c_lflag = 0; // No local flags
+    options.c_lflag &= ~ICANON; // Don't canonicalise
+    options.c_lflag &= ~ECHO; // Don't echo
+    options.c_lflag &= ~ECHOK; // Don't echo
+
+    // Control flags
+    options.c_cflag &= ~CRTSCTS; // Disable RTS/CTS
+    options.c_cflag |= CLOCAL; // Ignore status lines
+    options.c_cflag |= CREAD; // Enable receiver
+    options.c_cflag |= HUPCL; // Drop DTR on close
     options.c_cflag &= ~PARENB; // 8N1
     options.c_cflag &= ~CSTOPB;
     options.c_cflag &= ~CSIZE;
     options.c_cflag |= CS8;
 
-    options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Raw input
-    options.c_oflag &= ~OPOST; // Raw output
-    options.c_iflag &= ~(IXOFF | IXANY);
+    // oflag - output processing
+    options.c_oflag &= ~OPOST; // No output processing
+    options.c_oflag &= ~ONLCR; // Don't convert linefeeds
+
+    // iflag - input processing
+    options.c_iflag |= IGNPAR; // Ignore parity
+    options.c_iflag &= ~ISTRIP; // Don't strip high order bit
+    options.c_iflag |= IGNBRK; // Ignore break conditions
+    options.c_iflag &= ~INLCR; // Don't Map NL to CR
+    options.c_iflag &= ~ICRNL; // Don't Map CR to NL
+
 #ifdef XONXOFF
-    options.c_iflag |=  IXON; // XON-XOFF Flow Control outgoing
+    options.c_iflag |= (IXON | IXOFF | IXANY); // XON-XOFF Flow Control
 #else
-    options.c_iflag &= ~(IXON);
+    options.c_iflag &= ~(IXON | IXOFF | IXANY);
 #endif
 
     tcsetattr(fd, TCSANOW, &options);
@@ -88,7 +106,7 @@ ssize_t serialRead(char *data, size_t length) {
 }
 
 int serialSync(void) {
-    return fsync(fd);
+    return tcdrain(fd);
 }
 
 // Close the serial Port

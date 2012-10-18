@@ -30,6 +30,39 @@
 char **hexFile = NULL;
 int hexFileLines = 0;
 
+void parseData(uint8_t *d) {
+    uint32_t offset = 0;
+    uint32_t start = minAddress();
+    for (int i = 0; i < hexFileLines; i++) {
+        HexLine *h = parseLine(i);
+        uint32_t a = h->address + (offset << 4);
+
+        if (h->type == 0x00) {
+            for (int j = 0; j < h->length; j++) {
+                d[(a - start) + j] = h->data[j];
+            }
+        } else if (h->type == 0x02) {
+            offset = parseDigit(h->data, 4);
+        }
+
+        free(h->data);
+        free(h);
+    }
+}
+
+uint32_t dataLength(void) {
+    uint32_t l = 0;
+    for (int i = 0; i < hexFileLines; i++) {
+        HexLine *h = parseLine(i);
+        if (h->type == 0x00) {
+            l += h->length;
+        }
+        free(h->data);
+        free(h);
+    }
+    return l;
+}
+
 uint16_t parseDigit(char *d, int len) {
     uint16_t val = 0;
     for (int i = 0; i < len; i++) {
@@ -61,7 +94,8 @@ HexLine *parseLine(int line) {
     h->length = parseDigit(hexFile[line] + 1, 2); // Record length
     h->address = parseDigit(hexFile[line] + 3, 4); // Load Offset
     h->type = parseDigit(hexFile[line] + 7, 2); // Record Type
-    uint16_t checksum = h->length + h->address + h->type;
+    uint16_t checksum = h->length + (h->address & 0x00FF) + h->type;
+    checksum += ((h->address & 0xFF00) >> 8);
 
     // Memory for data
     h->data = (uint8_t *)malloc(h->length * sizeof(uint8_t));
@@ -75,12 +109,11 @@ HexLine *parseLine(int line) {
         checksum += h->data[i];
     }
 
-    checksum = (~checksum) & 0x00FF;
-    checksum += 1;
+    checksum += parseDigit(hexFile[line] + 9 + (2 * h->length), 2);
 
-    if ((checksum & 0x00FF) != parseDigit(hexFile[line] + 9 + (2 * h->length), 2)) {
+    if ((checksum & 0x00FF) != 0) {
         h->valid = 0;
-        debugPrint("%i: Checksum invalid!\n", line);
+        debugPrint("%i: Checksum invalid (%X != %X)!\n", line, checksum, 0);
     } else {
         h->valid = 1;
     }
@@ -88,13 +121,39 @@ HexLine *parseLine(int line) {
     return h;
 }
 
-uint16_t minAddress(void) {
-    uint16_t minAdd = UINT16_MAX;
+uint32_t maxAddress(void) {
+    uint32_t maxAdd = 0;
+    uint32_t offset = 0;
     for (int i = 0; i < hexFileLines; i++) {
         HexLine *h = parseLine(i);
-        if (h->address < minAdd) {
-            minAdd = h->address;
+        uint32_t a = h->address + (offset << 4);
+        if (h->type == 0x00) {
+            if (a > maxAdd) {
+                maxAdd = a;
+            }
+        } else if (h->type == 0x02) {
+            offset = parseDigit(h->data, 4);
         }
+        free(h->data);
+        free(h);
+    }
+    return maxAdd;
+}
+
+uint32_t minAddress(void) {
+    uint32_t minAdd = UINT16_MAX;
+    uint32_t offset = 0;
+    for (int i = 0; i < hexFileLines; i++) {
+        HexLine *h = parseLine(i);
+        uint32_t a = h->address + (offset << 4);
+        if (h->type == 0x00) {
+            if (a < minAdd) {
+                minAdd = a;
+            }
+        } else if (h->type == 0x02) {
+            offset = parseDigit(h->data, 4);
+        }
+        free(h->data);
         free(h);
     }
     return minAdd;
@@ -106,6 +165,10 @@ int isValid(void) {
         if (h->valid == 0) {
             return 0;
         }
+        if (h->type >= 0x04) {
+            return 0;
+        }
+        free(h->data);
         free(h);
     }
     return 1;
