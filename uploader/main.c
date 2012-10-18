@@ -24,6 +24,7 @@
 #include <unistd.h> // usleep()
 
 #include "serial.h"
+#include "parser.h"
 
 char readc(void);
 void writec(char c);
@@ -33,14 +34,13 @@ void printNextPage(void);
 void intHandler(int dummy);
 #define suicide() intHandler(0)
 
-FILE *fp = NULL;
-
 #define OKAY 'o'
 #define ERROR 'e'
 #define FLASH 'f'
 #define CONFIRM 'c'
 
 int main(int argc, char *argv[]) {
+    FILE *fp;
     if (argc < 3) {
         printf("Usage:\n%s /dev/port /path/to.hex [q]\n", argv[0]);
         return 1;
@@ -60,7 +60,6 @@ int main(int argc, char *argv[]) {
     }
 
     fclose(fp);
-    fp = NULL;
 
     // Open serial port
     if (serialOpen(argv[1]) != 0) {
@@ -71,18 +70,23 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, intHandler);
     signal(SIGQUIT, intHandler);
 
-    printf("Waiting for bootloader...\nStop with CTRL+C\n");
+    printf("Waiting for bootloader... Stop with CTRL+C\n");
 
     if (argc > 3) {
         writec(argv[3][0]); // TO-DO: Parse C Escape Sequences
     }
 
+    if (!isValid()) {
+        printf("HEX-File not valid!\n");
+        suicide();
+    }
 
+    printf("Minimum Address: %X", minAddress());
 
     printf("Got response from YASAB! Sending HEX-File...\n");
 
     printf("YASAB confirmed upload!\n");
-    fclose(fp);
+    freeHex();
     serialClose();
     return 0;
 }
@@ -180,9 +184,7 @@ void writec(char c) {
 }
 
 void intHandler(int dummy) {
-    if (fp != NULL) {
-        fclose(fp);
-    }
     serialClose();
+    freeHex();
     exit(1);
 }

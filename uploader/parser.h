@@ -18,5 +18,22 @@
  * You should have received a copy of the GNU General Public License
  * along with YASAB.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdio.h>
+#include <stdint.h>
+
+typedef struct {
+    int valid;
+    uint8_t length;
+    uint16_t address;
+    int type;
+    uint8_t *data;
+} HexLine;
+
+uint16_t parseDigit(char *d, int len);
+HexLine *parseLine(int line);
 
 int readHex(FILE *fp);
+void freeHex(void);
+
+uint16_t minAddress(void);
+int isValid(void);
