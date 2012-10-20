@@ -32,11 +32,6 @@
 
 uint8_t buf[SPM_PAGESIZE]; // Data to flash
 
-// SPM_PAGESIZE = 128 <=>
-//   0 - 127 --> 0
-// 128 - 255 --> 128
-#define page(x) (x - (x % SPM_PAGESIZE))
-
 uint32_t readFourBytes(char c) {
     uint32_t i;
     i = (((uint32_t)c) << 24);
@@ -52,6 +47,7 @@ uint32_t readFourBytes(char c) {
 void main(void) __attribute__ ((noreturn));
 void main(void) {
     static uint32_t dataPointer = 0;
+    static uint32_t readPointer = 0;
     static uint32_t dataAddress;
     static uint32_t dataLength;
     static uint16_t bufPointer = 0;
@@ -86,7 +82,7 @@ void main(void) {
         gotoApplication();
     }
 
-    serialWrite(OKAY);
+    serialWrite(ACK);
     while (!serialTxBufferEmpty());
 
     dataAddress = readFourBytes(serialGetBlocking());
@@ -95,8 +91,9 @@ void main(void) {
     dataLength = readFourBytes(serialGetBlocking());
     debugPrint("Got length!\n");
 
-    while (dataPointer < dataLength) {
+    while (readPointer < dataLength) {
         buf[bufPointer] = serialGetBlocking();
+        readPointer++;
         if (bufPointer < (SPM_PAGESIZE - 1)) {
             bufPointer++;
         } else {
@@ -114,7 +111,7 @@ void main(void) {
 
     if (bufPointer != 0) {
         setFlow(0);
-        program(page(dataPointer + dataAddress), buf);
+        program(dataPointer + dataAddress, buf);
         setFlow(1);
         serialWrite(OKAY);
     }

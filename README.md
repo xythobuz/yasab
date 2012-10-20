@@ -26,7 +26,7 @@ The optional parameter, q, can be a character that is sent to reset the target.
 <tr><td>Repeat 'f'</td><td></td></tr>
 <tr><td></td><td>Respond with 'o'</td></tr>
 <tr><td>Send 'c'</td><td></td></tr>
-<tr><td></td><td>Respond with 'o'</td></tr>
+<tr><td></td><td>Respond with 'a'</td></tr>
 <tr><td>Send 32bit target address (MSB first)</td><td></td></tr>
 <tr><td></td><td>Respond with 'o' or 'e'</td></tr>
 <tr><td>Send 32bit data length (MSB first)</td><td></td></tr>

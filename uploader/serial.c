@@ -31,6 +31,7 @@
 
 #include "serial.h"
 
+#define XONXOFF
 #define SEARCH "tty"
 #define TIMEOUT 2 // in seconds
 #define XON 0x11
@@ -46,6 +47,10 @@ int serialOpen(char *port, int baud, int flowcontrol) {
     }
 
     tcgetattr(fd, &options);
+
+    options.c_lflag = 0;
+    options.c_oflag = 0;
+    options.c_iflag = 0;
 
     // Set Baudrate
     switch (baud) {
@@ -71,35 +76,22 @@ int serialOpen(char *port, int baud, int flowcontrol) {
             return -1;
     }
 
-    fcntl(fd, F_SETFL, FNDELAY); // read() isn't blocking'
-
-    // Local flags
-    // options.c_lflag = 0; // No local flags
-    options.c_lflag &= ~ICANON; // Don't canonicalise
-    options.c_lflag &= ~ECHO; // Don't echo
-    options.c_lflag &= ~ECHOK; // Don't echo
-
-    // Control flags
-    options.c_cflag &= ~CRTSCTS; // Disable RTS/CTS
-    options.c_cflag |= CLOCAL; // Ignore status lines
-    options.c_cflag |= CREAD; // Enable receiver
-    options.c_cflag |= HUPCL; // Drop DTR on close
-    options.c_cflag &= ~PARENB; // No parity
-    options.c_cflag &= ~CSTOPB; // Only 1 Stopbit
-
-    // 8 Databits
-    options.c_cflag &= ~CSIZE;
-    options.c_cflag |= CS8;
-
-    // oflag - output processing
-    options.c_oflag = 0;
-
-    // iflag - input processing
-    options.c_iflag = 0;
-    options.c_iflag |= IGNPAR; // Ignore parity
+    // Input Modes
+    options.c_iflag |= IGNCR; // Ignore CR
 #ifdef XONXOFF
-    options.c_iflag |= (IXON | IXOFF); // XON-XOFF Flow Control
+    options.c_iflag |= IXON; // XON-XOFF Flow Control
 #endif
+
+    // Output Modes
+    options.c_oflag |= OPOST; // Post-process output
+
+    // Control Modes
+    options.c_cflag |= CS8; // 8 data bits
+    options.c_cflag |= CREAD; // Enable Receiver
+    options.c_cflag |= CLOCAL; // Ignore modem status lines
+
+    // Local Modes
+    options.c_lflag |= IEXTEN; // Extended input character processing
 
     // Special characters
     options.c_cc[VMIN] = 0; // Always return...

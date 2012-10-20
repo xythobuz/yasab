@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h> // usleep()
 
 #include "serial.h"
 #include "parser.h"
@@ -35,8 +34,7 @@ void intHandler(int dummy);
 #define ERROR 'e'
 #define FLASH 'f'
 #define CONFIRM 'c'
-
-#define PINGDELAY 2000 // in milliseconds
+#define ACK 'a'
 
 int fd = -1;
 
@@ -103,20 +101,20 @@ int main(int argc, char *argv[]) {
 
     printf("Pinging bootloader... Stop with CTRL+C\n");
 
+ping:
     serialWriteChar(fd, FLASH);
     serialReadChar(fd, &c);
     if (c != OKAY) {
-        printf("Received strange byte (%c - %x). WTF?!\n", c, c);
+        printf("Received strange byte (%x). WTF?!\n", c, c);
+        goto ping;
     }
 
     printf("Got response... Acknowledging...\n");
     serialWriteChar(fd, CONFIRM);
     serialReadChar(fd, &c);
-    if (c != OKAY) {
-        printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
-        free(d);
-        serialClose(fd);
-        return 1;
+    if (c != ACK) {
+        printf("Invalid acknowledge from YASAB (%x)! Trying again...\n", c, c);
+        goto ping; // Go kill me for it...
     }
 
     printf("Connection established successfully!\n");
@@ -129,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     serialReadChar(fd, &c);
     if (c != OKAY) {
-        printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
+        printf("Invalid acknowledge from YASAB (%x)!\n", c, c);
         free(d);
         serialClose(fd);
         return 1;
@@ -144,7 +142,7 @@ int main(int argc, char *argv[]) {
 
     serialReadChar(fd, &c);
     if (c != OKAY) {
-        printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
+        printf("Invalid acknowledge from YASAB (%x)!\n", c, c);
         free(d);
         serialClose(fd);
         return 1;
@@ -162,7 +160,7 @@ int main(int argc, char *argv[]) {
                 serialClose(fd);
                 return 1;
             } else {
-                printf("Unknown answer from YASAB (%c - %x)!\n", c, c);
+                printf("Unknown answer from YASAB (%x)!\n", c, c);
             }
         }
         printProgress(i + 1, length);
@@ -178,13 +176,8 @@ int main(int argc, char *argv[]) {
 }
 
 void printNextPage(void) {
-    static int i = 0;
-    printf("  ");
-    for (int j = 0; j < i; j++) {
-        printf("%i ", j + 1);
-    }
-    i++;
-    printf("page(s) written!");
+    static int i = 1;
+    printf(" %i page(s) written!", i++);
 }
 
 void printProgress(long a, long b) {

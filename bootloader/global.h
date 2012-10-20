@@ -31,6 +31,7 @@
 #define OKAY 'o'
 #define FLASH 'f'
 #define CONFIRM 'c'
+#define ACK 'a'
 
 extern uint8_t buf[SPM_PAGESIZE];
 
