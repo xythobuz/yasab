@@ -11,6 +11,8 @@ Running "make" will produce yasab.hex and sample.hex. The first is the real boot
 
 Configuration Options like Baudrate, Bootdelay or Clock Frequency can be changed in the makefile.
 
+Currently, 1868 bytes in Flash are needed. Therefore, set the bootloader section size to 1024 Words.
+
 ## Uploader
 
 This is a small utility to upload hex files to YASAB.
