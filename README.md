@@ -47,7 +47,4 @@ The optional parameter, q, can be a character that is sent to reset the target.
 
 ## License
 
-YASAB is released under the [LGPLv3](http://www.gnu.org/licenses/lgpl-3.0.html).
-> &copy; 2012 Thomas Buck
-
-See the accompanying COPYING file.
+YASAB is released under a BSD 2-Clause License. See the accompanying COPYING file.
