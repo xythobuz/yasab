@@ -39,3 +39,19 @@ void parse(void);
 void set(uint8_t *d, uint8_t c, uint16_t l);
 void program(uint32_t page, uint8_t *d);
 void gotoApplication(void);
+
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
+#define TCRA TCCR2A
+#define TCRB TCCR2B
+#define OCR OCR2A
+#define TIMS TIMSK2
+#define OCIE OCIE2A
+#elif defined(__AVR_ATmega32__)
+#define TCRA TCCR2
+#define TCRB TCCR2
+#define OCR OCR2
+#define TIMS TIMSK
+#define OCIE OCIE2
+#else
+#error MCU not compatible with timer module. DIY!
+#endif

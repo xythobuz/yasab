@@ -37,6 +37,8 @@ inline void gotoAddress(void (*app)(void), uint8_t c) {
     serialClose();
     cli();
 
+    TCRA = TCRB = TIMS = 0;
+
     // Fix Interrupt Vectors
     uint8_t t = GICR;
     GICR = t | (1 << IVCE);

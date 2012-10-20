@@ -31,6 +31,7 @@
 #include "global.h"
 
 uint8_t buf[SPM_PAGESIZE]; // Data to flash
+volatile uint32_t systemTime = 0;
 
 uint32_t readFourBytes(char c) {
     uint32_t i;
@@ -58,27 +59,46 @@ void main(void) {
     GICR = c | (1 << IVCE);
     GICR = c | (1 << IVSEL);
 
+    TCRA |= (1 << WGM21); // CTC Mode
+#if F_CPU == 16000000
+    TCRB |= (1 << CS22); // Prescaler: 64
+    OCR = 250;
+#else
+#error F_CPU not compatible with timer module. DIY!
+#endif
+    TIMS |= (1 << OCIE); // Enable compare match interrupt
+
     serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
     set(buf, 0xFF, sizeof(buf));
-
-    _delay_ms(BOOTDELAY);
 
     debugPrint("YASAB ");
     debugPrint(VERSION);
     debugPrint(" by xythobuz\n");
 
-    while (serialHasChar()) {
-        c = serialGet(); // Clear rx buffer
+    while (systemTime < BOOTDELAY) {
+        if (serialHasChar()) {
+            c = serialGet(); // Clear rx buffer
+            goto ok;
+        }
     }
+    gotoApplication();
 
+ok:
     serialWrite(OKAY);
     while (!serialTxBufferEmpty()); // Wait till it's sent
 
-    if (serialGetBlocking() != CONFIRM) {
-        gotoApplication();
+    uint32_t t = systemTime;
+    while (systemTime < (t + BOOTDELAY)) {
+        if (serialHasChar()) {
+            if (serialGet() == CONFIRM) {
+                goto ack;
+            }
+        }
     }
+    gotoApplication();
 
+ack:
     serialWrite(ACK);
     while (!serialTxBufferEmpty());
 
@@ -114,4 +134,14 @@ void main(void) {
     }
 
     gotoApplication();
+}
+
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
+ISR(TIMER2_COMPA_vect) {
+#elif defined(__AVR_ATmega32__)
+ISR(TIMER2_COMP_vect) {
+#else
+#error MCU not compatible with timer module. DIY!
+#endif
+    systemTime++;
 }
