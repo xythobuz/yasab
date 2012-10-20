@@ -1,4 +1,4 @@
-TARGET = uploader
+TARGET = yasab
 SRC = main.c
 SRC += serial.c
 SRC += parser.c

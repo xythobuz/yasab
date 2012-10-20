@@ -1,4 +1,12 @@
 # YASAB
+## Quickstart
+
+Just run make in the Top Level Directory. This will produce a yasab.hex for your AtMega32 and yasab, the Unix upload utility. Flash the HEX and change the Fusebits to Bootloadersize 1024 Words, jump to bootloader on reset.
+
+You need a Toolchain for your Hostmachine and for AVRs.
+Change configuration options for the AVR firmware in the makefile in "bootloader".
+Change configuration options for the uploader in "uploader"s makefile.
+
 ## Yet Another Simple AVR Bootloader
 
 This AVR Bootloader just gets data from the included uploader. This will be flashed and started.
