@@ -32,7 +32,6 @@ void intHandler(int dummy);
 
 #define OKAY 'o'
 #define ERROR 'e'
-#define FLASH 'f'
 #define CONFIRM 'c'
 #define ACK 'a'
 
@@ -41,6 +40,7 @@ int fd = -1;
 int main(int argc, char *argv[]) {
     FILE *fp;
     char c;
+    time_t start = time(NULL), end;
     if ((argc < 3) || (argc > 4)) {
         printf("Usage:\n%s /dev/port /path/to.hex [q]\n", argv[0]);
         return 1;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     printf("Hex File Path   : %s\n", argv[2]);
     printf("Minimum Address : 0x%X\n", min);
     printf("Maximum Address : 0x%X\n", max);
-    printf("Data payload    : %i bytes\n", length);
+    printf("Data payload    : %i bytes\n\n", length);
 
     uint8_t *d = (uint8_t *)malloc(length * sizeof(uint8_t));
     if (d == NULL) {
@@ -94,15 +94,15 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, intHandler);
     signal(SIGQUIT, intHandler);
 
-    if (argc > 3) {
-        serialWriteChar(fd, argv[3][0]); // TO-DO: Parse C Escape Sequences
-        printf("Sent reset command '%c' - 0x%x\n", argv[3][0], argv[3][0]);
-    }
-
     printf("Pinging bootloader... Stop with CTRL+C\n");
 
 ping:
-    serialWriteChar(fd, FLASH);
+    if (argc > 3) {
+        c = argv[3][0];
+    } else {
+        c = 'f';
+    }
+    serialWriteChar(fd, c);
     serialReadChar(fd, &c);
     if (c != OKAY) {
         printf("Received strange byte (%x). WTF?!\n", c, c);
@@ -114,7 +114,7 @@ ping:
     serialReadChar(fd, &c);
     if (c != ACK) {
         printf("Invalid acknowledge from YASAB (%x)! Trying again...\n", c, c);
-        goto ping; // Go kill me for it...
+        goto ping;
     }
 
     printf("Connection established successfully!\n");
@@ -166,7 +166,8 @@ ping:
         printProgress(i + 1, length);
     }
 
-    printf("\n\nUpload finished. Thank you!\n");
+    end = time(NULL);
+    printf("\n\nUpload finished after %3.1f seconds.\n", difftime(end, start));
     printf("YASAB - Yet another simple AVR Bootloader\n");
     printf("By xythobuz - Visit www.xythobuz.org\n");
 

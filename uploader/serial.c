@@ -66,6 +66,10 @@ int serialOpen(char *port, int baud, int flowcontrol) {
             cfsetispeed(&options, B38400);
             cfsetospeed(&options, B38400);
             break;
+        case 76800:
+            cfsetispeed(&options, B76800);
+            cfsetospeed(&options, B76800);
+            break;
         case 115200:
             cfsetispeed(&options, B115200);
             cfsetospeed(&options, B115200);
@@ -100,6 +104,8 @@ int serialOpen(char *port, int baud, int flowcontrol) {
     options.c_cc[VSTART] = XON;
 
     tcsetattr(fd, TCSANOW, &options);
+
+    tcflush(fd, TCIOFLUSH);
 
     return fd;
 }

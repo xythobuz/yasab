@@ -71,9 +71,6 @@ void main(void) {
     while (serialHasChar()) {
         c = serialGet(); // Clear rx buffer
     }
-    if (c != FLASH) {
-        gotoApplication();
-    }
 
     serialWrite(OKAY);
     while (!serialTxBufferEmpty()); // Wait till it's sent

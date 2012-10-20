@@ -23,7 +23,7 @@ The optional parameter, q, can be a character that is sent to reset the target.
 
 <table>
 <tr><th>Computer</th><th>AVR</th></tr>
-<tr><td>Repeat 'f'</td><td></td></tr>
+<tr><td>Repeat any character</td><td></td></tr>
 <tr><td></td><td>Respond with 'o'</td></tr>
 <tr><td>Send 'c'</td><td></td></tr>
 <tr><td></td><td>Respond with 'a'</td></tr>
