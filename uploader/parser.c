@@ -113,7 +113,7 @@ HexLine *parseLine(int line) {
 
     if ((checksum & 0x00FF) != 0) {
         h->valid = 0;
-        debugPrint("%i: Checksum invalid (%X != %X)!\n", line, checksum, 0);
+        fprintf(stderr, "%i: Checksum invalid (%X != %X)!\n", line, checksum, 0);
     } else {
         h->valid = 1;
     }
@@ -187,6 +187,7 @@ int readHex(FILE *fp) {
     // Allocate memory for hex file lines
     hexFile = (char **)malloc(lines * sizeof(char *));
     if (hexFile == NULL) {
+        fprintf(stderr, "Not enough memory (%lu bytes)\n", lines * sizeof(char *));
         return 1;
     }
 
@@ -196,6 +197,7 @@ int readHex(FILE *fp) {
         // Allocate memory
         hexFile[hexFileLines] = (char *)malloc((strlen(linebuf) + 1) * sizeof(char));
         if (hexFile[hexFileLines] == NULL) {
+            fprintf(stderr, "Not enough memory (%lu bytes)\n", (strlen(linebuf) + 1) * sizeof(char));
             freeHex();
             return 1;
         }

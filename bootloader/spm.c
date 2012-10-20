@@ -67,14 +67,17 @@ void program(uint32_t page, uint8_t *d) {
 
     cli();
 
-    boot_page_erase_safe(page);
+    eeprom_busy_wait();
+    boot_page_erase(page);
+    boot_spm_busy_wait();
     for (i = 0; i < SPM_PAGESIZE; i += 2) {
         uint16_t w = *d++;
-        w += ((*d++) << 8);
-        boot_page_fill_safe(page + i, w);
+        w += (*d++) << 8;
+        boot_page_fill(page + i, w);
     }
-    boot_page_write_safe(page);
-    boot_rww_enable_safe(); // Allows us to jump back
+    boot_page_write(page);
+    boot_spm_busy_wait();
+    boot_rww_enable(); // Allows us to jump back
 
     SREG = sreg;
 }

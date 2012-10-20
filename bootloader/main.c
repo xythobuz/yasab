@@ -30,8 +30,31 @@
 
 #include "global.h"
 
+uint8_t buf[SPM_PAGESIZE]; // Data to flash
+
+// SPM_PAGESIZE = 128 <=>
+//   0 - 127 --> 0
+// 128 - 255 --> 128
+#define page(x) (x - (x % SPM_PAGESIZE))
+
+uint32_t readFourBytes(char c) {
+    uint32_t i;
+    i = (((uint32_t)c) << 24);
+    i |= (((uint32_t)serialGetBlocking()) << 16);
+    i |= (((uint32_t)serialGetBlocking()) << 8);
+    i |= ((uint32_t)serialGetBlocking());
+
+    serialWrite(OKAY);
+    while (!serialTxBufferEmpty()); // Wait till it's sent
+    return i;
+}
+
 void main(void) __attribute__ ((noreturn));
 void main(void) {
+    static uint32_t dataPointer = 0;
+    static uint32_t dataAddress;
+    static uint32_t dataLength;
+    static uint16_t bufPointer = 0;
     uint8_t c = 0;
 
     // Move Interrupt Vectors into Bootloader Section
@@ -58,15 +81,43 @@ void main(void) {
 
     serialWrite(OKAY);
     while (!serialTxBufferEmpty()); // Wait till it's sent
-    while (!serialHasChar());
-    if (serialGet() != CONFIRM) {
+
+    if (serialGetBlocking() != CONFIRM) {
         gotoApplication();
     }
 
     serialWrite(OKAY);
     while (!serialTxBufferEmpty());
 
-    for(;;) {
-        parse();
+    dataAddress = readFourBytes(serialGetBlocking());
+    debugPrint("Got address!\n");
+
+    dataLength = readFourBytes(serialGetBlocking());
+    debugPrint("Got length!\n");
+
+    while (dataPointer < dataLength) {
+        buf[bufPointer] = serialGetBlocking();
+        if (bufPointer < (SPM_PAGESIZE - 1)) {
+            bufPointer++;
+        } else {
+            bufPointer = 0;
+            setFlow(0);
+            program(dataPointer + dataAddress, buf);
+            setFlow(1);
+            dataPointer += SPM_PAGESIZE;
+            set(buf, 0xFF, sizeof(buf));
+            serialWrite(OKAY);
+        }
     }
+
+    debugPrint("Got data!\n");
+
+    if (bufPointer != 0) {
+        setFlow(0);
+        program(page(dataPointer + dataAddress), buf);
+        setFlow(1);
+        serialWrite(OKAY);
+    }
+
+    gotoApplication();
 }

@@ -5,7 +5,7 @@ F_CPU = 16000000
 # Baudrate to use
 BAUDRATE = 38400
 # Time in ms to wait for incoming files
-BOOTDELAY = 750
+BOOTDELAY = 500
 # Command to delete files
 RM = rm -rf
 
@@ -16,7 +16,6 @@ CSTANDARD = gnu99
 
 SRC = main.c
 SRC += serial.c
-SRC += parse.c
 SRC += spm.c
 SRC += util.c
 

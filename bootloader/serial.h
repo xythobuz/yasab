@@ -41,9 +41,12 @@
 void serialInit(uint16_t baud);
 void serialClose(void);
 
+void setFlow(uint8_t on);
+
 // Reception
 uint8_t serialHasChar(void);
-uint8_t serialGet(void); // Get a character. Always blocking
+uint8_t serialGet(void); // Get a character
+uint8_t serialGetBlocking(void);
 uint8_t serialRxBufferFull(void); // 1 if full
 uint8_t serialRxBufferEmpty(void); // 1 if empty
 

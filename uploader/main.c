@@ -26,9 +26,6 @@
 #include "serial.h"
 #include "parser.h"
 
-char readc(void);
-void writec(char c);
-void sync(void);
 void printProgress(long a, long b);
 void printNextPage(void);
 void intHandler(int dummy);
@@ -38,6 +35,10 @@ void intHandler(int dummy);
 #define ERROR 'e'
 #define FLASH 'f'
 #define CONFIRM 'c'
+
+#define PINGDELAY 2000 // in milliseconds
+
+int fd = -1;
 
 int main(int argc, char *argv[]) {
     FILE *fp;
@@ -78,7 +79,7 @@ int main(int argc, char *argv[]) {
 
     uint8_t *d = (uint8_t *)malloc(length * sizeof(uint8_t));
     if (d == NULL) {
-        printf("Not enough memory!\n");
+        fprintf(stderr, "Not enough memory (%lu bytes)!\n", length * sizeof(uint8_t));
         freeHex();
         return 1;
     }
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]) {
     freeHex();
 
     // Open serial port
-    if (serialOpen(argv[1]) != 0) {
+    if ((fd = serialOpen(argv[1], 38400, 1)) == -1) {
         printf("Could not open port %s\n", argv[1]);
         free(d);
         return 1;
@@ -96,78 +97,69 @@ int main(int argc, char *argv[]) {
     signal(SIGQUIT, intHandler);
 
     if (argc > 3) {
-        writec(argv[3][0]); // TO-DO: Parse C Escape Sequences
+        serialWriteChar(fd, argv[3][0]); // TO-DO: Parse C Escape Sequences
+        printf("Sent reset command '%c' - 0x%x\n", argv[3][0], argv[3][0]);
     }
 
     printf("Pinging bootloader... Stop with CTRL+C\n");
 
-    int i = 0;
-    while(1) {
-        writec(FLASH);
-        i++;
-        if (serialRead(&c, 1) == 1) {
-            if (c == OKAY) {
-                break;
-            } else {
-                printf("Received strange byte (%c - %x). WTF?!\n", c, c);
-            }
-        }
-        usleep(500000);
+    serialWriteChar(fd, FLASH);
+    serialReadChar(fd, &c);
+    if (c != OKAY) {
+        printf("Received strange byte (%c - %x). WTF?!\n", c, c);
     }
 
-    printf("Got response after %i attempts. Acknowledging...\n", i);
-    writec(CONFIRM);
-    writec(CONFIRM);
-    writec(CONFIRM);
-
-    c = readc();
+    printf("Got response... Acknowledging...\n");
+    serialWriteChar(fd, CONFIRM);
+    serialReadChar(fd, &c);
     if (c != OKAY) {
         printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
         free(d);
-        serialClose();
+        serialClose(fd);
         return 1;
     }
 
     printf("Connection established successfully!\n");
     printf("Sending target address...\n");
 
-    writec((min & 0xFF000000) >> 24);
-    writec((min & 0x00FF0000) >> 16);
-    writec((min & 0x0000FF00) >> 8);
-    writec(min & 0x000000FF);
+    serialWriteChar(fd, (min & 0xFF000000) >> 24);
+    serialWriteChar(fd, (min & 0x00FF0000) >> 16);
+    serialWriteChar(fd, (min & 0x0000FF00) >> 8);
+    serialWriteChar(fd, min & 0x000000FF);
 
-    c = readc();
+    serialReadChar(fd, &c);
     if (c != OKAY) {
         printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
         free(d);
-        serialClose();
+        serialClose(fd);
         return 1;
     }
 
     printf("Sending data length...\n");
 
-    writec((length & 0xFF000000) >> 24);
-    writec((length & 0x00FF0000) >> 16);
-    writec((length & 0x0000FF00) >> 8);
-    writec(length & 0x000000FF);
+    serialWriteChar(fd, (length & 0xFF000000) >> 24);
+    serialWriteChar(fd, (length & 0x00FF0000) >> 16);
+    serialWriteChar(fd, (length & 0x0000FF00) >> 8);
+    serialWriteChar(fd, length & 0x000000FF);
 
-    c = readc();
+    serialReadChar(fd, &c);
     if (c != OKAY) {
         printf("Invalid acknowledge from YASAB (%c - %x)!\n", c, c);
         free(d);
-        serialClose();
+        serialClose(fd);
         return 1;
     }
 
     for (uint32_t i = 0; i < length; i++) {
-        writec(d[i]);
-        if (serialRead(&c, 1) == 1) {
+        serialWriteChar(fd, d[i]);
+        if (serialHasChar(fd)) {
+            serialReadChar(fd, &c);
             if (c == OKAY) {
                 printNextPage();
             } else if (c == ERROR) {
                 printf("YASAB aborted the connection!\n");
                 free(d);
-                serialClose();
+                serialClose(fd);
                 return 1;
             } else {
                 printf("Unknown answer from YASAB (%c - %x)!\n", c, c);
@@ -176,22 +168,23 @@ int main(int argc, char *argv[]) {
         printProgress(i + 1, length);
     }
 
-    printf("Upload finished. Thank you!\n");
+    printf("\n\nUpload finished. Thank you!\n");
     printf("YASAB - Yet another simple AVR Bootloader\n");
     printf("By xythobuz - Visit www.xythobuz.org\n");
 
     free(d);
-    serialClose();
+    serialClose(fd);
     return 0;
 }
 
 void printNextPage(void) {
     static int i = 0;
+    printf("  ");
     for (int j = 0; j < i; j++) {
-        printf(" ");
+        printf("%i ", j + 1);
     }
     i++;
-    printf(" Next page written!");
+    printf("page(s) written!");
 }
 
 void printProgress(long a, long b) {
@@ -200,60 +193,8 @@ void printProgress(long a, long b) {
     fflush(stdout);
 }
 
-// 1 on error, 0 on success
-int serialTry(char *data, size_t length, ssize_t (*ser)(char *, size_t)) {
-    int i = 0;
-    int written = 0;
-    int ret;
-    time_t start, end;
-    start = time(NULL);
-    while (1) {
-        ret = ser((data + written), (length - written));
-        if (ret == -1) {
-            i++;
-        } else {
-            written += ret;
-        }
-        if (i > 10) {
-            return 1;
-        }
-        if (written == length) {
-            break;
-        }
-        end = time(NULL);
-        if (difftime(start, end) > 2) {
-            printf("Timeout!\n");
-            return 1;
-        }
-    }
-    return 0;
-}
-
-void sync(void) {
-    if (serialSync() != 0) {
-        printf("Could not sync data!\n");
-        suicide();
-    }
-}
-
-char readc(void) {
-    char c;
-    if (serialTry(&c, 1, serialRead) != 0) {
-        printf("Error while reading!\n");
-        suicide();
-    }
-    return c;
-}
-
-void writec(char c) {
-    if (serialTry(&c, 1, serialWrite) != 0) {
-        printf("Error while sending!\n");
-        suicide();
-    }
-    sync();
-}
-
 void intHandler(int dummy) {
-    serialClose();
+    if (fd != -1)
+        serialClose(fd);
     exit(1);
 }

@@ -1,7 +1,4 @@
 /*
- * POSIX compatible serial port library
- * Uses 8 databits, no parity, 1 stop bit, no handshaking
- *
  * serial.h
  *
  * Copyright 2012 Thomas Buck <xythobuz@me.com>
@@ -22,27 +19,16 @@
  * along with YASAB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Use POSIX Baud constants (B2400, B9600...)
-#define BAUD B38400
-// Searchterm for ports in unix
-#define SEARCH "tty"
+// Open the serial port. Return file handle on success, -1 on error.
+int serialOpen(char *port, int baud, int flowcontrol);
+void serialClose(int fd);
 
-#define XONXOFF
+int serialHasChar(int fd); // Returns 1 if char is available, 0 if not.
 
-// Open the serial port. Return 0 on success, -1 on error
-int serialOpen(char *port);
+// Blocking functions
+void serialWriteChar(int fd, char c);
+void serialReadChar(int fd, char *c);
+void serialWriteString(int fd, char *s);
 
-// Write to port. Returns number of characters sent, -1 on error
-ssize_t serialWrite(char *data, size_t length);
-
-// Read from port. Return number of characters read, 0 if none available, -1 on error
-ssize_t serialRead(char *data, size_t length);
-
-// Close the serial Port
-void serialClose(void);
-
-// String array with serial port names
+// String array with serial port names. Free after use!
 char** getSerialPorts(void);
-
-// Write out all data
-int serialSync(void);
