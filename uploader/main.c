@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <unistd.h> // usleep
+
 #include "serial.h"
 #include "parser.h"
 
@@ -43,6 +45,8 @@ void intHandler(int dummy);
 #define ERROR 'e'
 #define CONFIRM 'c'
 #define ACK 'a'
+
+#define PINGDELAY 10 // in milliseconds
 
 int fd = -1;
 
@@ -112,9 +116,10 @@ ping:
         c = 'f';
     }
     serialWriteChar(fd, c);
+    usleep(PINGDELAY * 1000);
     serialReadChar(fd, &c);
     if (c != OKAY) {
-        printf("Received strange byte (%x). WTF?!\n", c, c);
+        // printf("Received strange byte.\n", c, c);
         goto ping;
     }
 
@@ -122,7 +127,7 @@ ping:
     serialWriteChar(fd, CONFIRM);
     serialReadChar(fd, &c);
     if (c != ACK) {
-        printf("Invalid acknowledge from YASAB (%x)! Trying again...\n", c, c);
+        printf("Invalid acknowledge! Trying again...\n", c, c);
         goto ping;
     }
 
@@ -136,7 +141,7 @@ ping:
 
     serialReadChar(fd, &c);
     if (c != OKAY) {
-        printf("Invalid acknowledge from YASAB (%x)!\n", c, c);
+        printf("Invalid acknowledge from YASAB!\n", c, c);
         free(d);
         serialClose(fd);
         return 1;
@@ -156,6 +161,8 @@ ping:
         serialClose(fd);
         return 1;
     }
+
+    printf("\n\n");
 
     for (uint32_t i = 0; i < length; i++) {
         serialWriteChar(fd, d[i]);
@@ -185,14 +192,35 @@ ping:
     return 0;
 }
 
+int pagesWritten = 0;
+
 void printNextPage(void) {
-    static int i = 1;
-    printf(" %i page(s) written!", i++);
+    pagesWritten++;
 }
 
 void printProgress(long a, long b) {
+    char cs[] = {'|', '|', '/', '/', '-', '-', '\\', '\\'};
+    int csl = 8;
+    static int i = 0;
     long c = (a * 100) / b;
-    printf("\r%li%% (%li / %li)", c, a, b);
+
+    printf("\r\033[1A"); // Go to beginning of current line, then one line up
+
+    printf("%li/%li bytes. %i page(s) programmed! %c\n", a, b, pagesWritten, cs[i]);
+    if (i < (csl - 1)) {
+        i++;
+    } else {
+        i = 0;
+    }
+    printf("Sending |");
+    for (int i = 0; i < (c / 2); i++) {
+        printf("#");
+    }
+    for (int i = (c / 2); i < 50; i++) {
+        printf("-");
+    }
+    printf("|  %li%%", c);
+
     fflush(stdout);
 }
 

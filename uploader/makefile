@@ -32,12 +32,17 @@ SRC += parser.c
 CC = gcc
 STANDARD = gnu99
 RM = rm -f
+DIR = ~/bin/
 
 # --------------------------------------
 
 OBJ = $(SRC:.c=.o)
 
 all: $(TARGET)
+
+install: $(TARGET)
+	cp $(TARGET) $(DIR)
+	make clean
 
 %.o : %.c
 	$(CC) -x c -std=$(STANDARD) -c $< -o $@

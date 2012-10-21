@@ -37,7 +37,7 @@
 
 // RX & TX buffer size in bytes
 #ifndef RX_BUFFER_SIZE
-#define RX_BUFFER_SIZE 32
+#define RX_BUFFER_SIZE 512
 #endif
 
 #ifndef TX_BUFFER_SIZE

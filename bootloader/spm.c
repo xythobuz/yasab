@@ -74,6 +74,7 @@ void program(uint32_t page, uint8_t *d) {
     debugPrint("\n");
 #endif
 
+    setFlow(0);
     cli();
 
     eeprom_busy_wait();
@@ -85,8 +86,7 @@ void program(uint32_t page, uint8_t *d) {
         boot_page_fill(page + i, w);
     }
     boot_page_write(page);
-    boot_spm_busy_wait();
-    boot_rww_enable(); // Allows us to jump back
 
     SREG = sreg;
+    setFlow(1);
 }

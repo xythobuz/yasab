@@ -41,12 +41,13 @@ void set(uint8_t *d, uint8_t c, uint16_t l) {
     }
 }
 
-inline void gotoAddress(void (*app)(void), uint8_t c) {
+void gotoApplication(void) {
+    void (*app)(void) = 0x0000;
     // Free Hardware Resources
     serialClose();
     cli();
 
-    TCRA = TCRB = TIMS = 0;
+    TCRA = TCRB = TIMS = 0; // Reset timer
 
     // Fix Interrupt Vectors
     uint8_t t = GICR;
@@ -55,13 +56,7 @@ inline void gotoAddress(void (*app)(void), uint8_t c) {
 
     // Call main program
 #ifdef EIND
-    EIND = c; // Bug in gcc for Flash > 128KB
+    EIND = 0; // Bug in gcc for Flash > 128KB
 #endif
     app();
-}
-
-typedef void (*StupidShit)(void);
-
-void gotoApplication(void) {
-    gotoAddress((StupidShit)0x0000, 0);
 }

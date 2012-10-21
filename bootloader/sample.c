@@ -31,15 +31,13 @@
 #include <stdint.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
 
 #include "serial.h"
-
-typedef void (*Func)(void);
 
 void main(void) __attribute__ ((noreturn));
 void main(void) {
     uint8_t c;
-    Func bootloader = (Func)(BOOTSTART / 2);
 
     serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
@@ -55,13 +53,8 @@ void main(void) {
             c = serialGet();
             if (c == 'q') {
                 serialWriteString("\nGoodbye...\n");
-                serialClose();
-#ifdef EIND
-                EIND = 1; // Bug in gcc for Flash > 128KB
-#endif
-                serialClose();
-                cli();
-                bootloader();
+                wdt_enable(WDTO_15MS);
+                while(1);
             } else {
                 serialWrite(c);
             }

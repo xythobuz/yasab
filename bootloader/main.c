@@ -39,6 +39,14 @@
 
 #include "global.h"
 
+#ifndef BOOTDELAY
+#define BOOTDELAY 500
+#endif
+
+#ifndef BAUDRATE
+#define BAUDRATE 38400
+#endif
+
 uint8_t buf[SPM_PAGESIZE]; // Data to flash
 volatile uint32_t systemTime = 0;
 
@@ -48,9 +56,6 @@ uint32_t readFourBytes(char c) {
     i |= (((uint32_t)serialGetBlocking()) << 16);
     i |= (((uint32_t)serialGetBlocking()) << 8);
     i |= ((uint32_t)serialGetBlocking());
-
-    serialWrite(OKAY);
-    while (!serialTxBufferEmpty()); // Wait till it's sent
     return i;
 }
 
@@ -88,7 +93,7 @@ void main(void) {
     while (systemTime < BOOTDELAY) {
         if (serialHasChar()) {
             c = serialGet(); // Clear rx buffer
-            goto ok;
+            goto ok; // Yeah, shame on me...
         }
     }
     gotoApplication();
@@ -101,7 +106,7 @@ ok:
     while (systemTime < (t + BOOTDELAY)) {
         if (serialHasChar()) {
             if (serialGet() == CONFIRM) {
-                goto ack;
+                goto ack; // I deserve it...
             }
         }
     }
@@ -112,9 +117,17 @@ ack:
     while (!serialTxBufferEmpty());
 
     dataAddress = readFourBytes(serialGetBlocking());
+    serialWrite(OKAY);
+    while (!serialTxBufferEmpty()); // Wait till it's sent
     debugPrint("Got address!\n");
 
     dataLength = readFourBytes(serialGetBlocking());
+    if ((dataAddress + dataLength) >= BOOTSTART) {
+        serialWrite(ERROR);
+    } else {
+        serialWrite(OKAY);
+    }
+    while (!serialTxBufferEmpty());
     debugPrint("Got length!\n");
 
     while (readPointer < dataLength) {
@@ -124,9 +137,7 @@ ack:
             bufPointer++;
         } else {
             bufPointer = 0;
-            setFlow(0);
             program(dataPointer + dataAddress, buf);
-            setFlow(1);
             dataPointer += SPM_PAGESIZE;
             set(buf, 0xFF, sizeof(buf));
             serialWrite(OKAY);
@@ -136,11 +147,15 @@ ack:
     debugPrint("Got data!\n");
 
     if (bufPointer != 0) {
-        setFlow(0);
         program(dataPointer + dataAddress, buf);
-        setFlow(1);
         serialWrite(OKAY);
     }
+
+    uint8_t sreg = SREG;
+    cli();
+    boot_spm_busy_wait();
+    boot_rww_enable(); // Allows us to jump to application
+    SREG = sreg;
 
     gotoApplication();
 }

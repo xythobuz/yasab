@@ -83,6 +83,10 @@ all: yasab.hex sample.hex
 size: yasab.hex
 	make clean
 
+test: sample.hex
+	make -C ../uploader install
+	yasab /dev/tty.usbserial-A100QOUE sample.hex q
+
 program: yasab.hex
 	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -e -U yasab.hex
 	make clean
