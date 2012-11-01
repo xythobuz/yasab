@@ -39,5 +39,8 @@ void serialWriteChar(int fd, char c);
 void serialReadChar(int fd, char *c);
 void serialWriteString(int fd, char *s);
 
+int serialReadRaw(int fd, char *d, int len);
+int serialWriteRaw(int fd, char *d, int len);
+
 // String array with serial port names. Free after use!
 char** getSerialPorts(void);

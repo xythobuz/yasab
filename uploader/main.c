@@ -107,9 +107,9 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, intHandler);
     signal(SIGQUIT, intHandler);
 
+ping:
     printf("Pinging bootloader... Stop with CTRL+C\n");
 
-ping:
     if (argc > 3) {
         c = argv[3][0];
     } else {
@@ -117,9 +117,7 @@ ping:
     }
     serialWriteChar(fd, c);
     usleep(PINGDELAY * 1000);
-    serialReadChar(fd, &c);
-    if (c != OKAY) {
-        // printf("Received strange byte.\n", c, c);
+    if ((serialReadRaw(fd, &c, 1) != 1) || (c != OKAY)) {
         goto ping;
     }
 
@@ -227,5 +225,5 @@ void printProgress(long a, long b) {
 void intHandler(int dummy) {
     if (fd != -1)
         serialClose(fd);
-    exit(1);
+    exit(2);
 }

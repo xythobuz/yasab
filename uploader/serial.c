@@ -42,7 +42,7 @@
 
 #define XONXOFF
 #define SEARCH "tty"
-#define TIMEOUT 2 // in seconds
+#define TIMEOUT 1 // in seconds
 #define XON 0x11
 #define XOFF 0x13
 
@@ -176,7 +176,7 @@ int serialReadRaw(int fd, char *d, int len) {
 }
 
 void serialWriteChar(int fd, char c) {
-    while (serialWriteRaw(fd, &c, 1) != 1);
+    serialWriteRaw(fd, &c, 1);
 }
 
 void serialReadChar(int fd, char *c) {
