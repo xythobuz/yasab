@@ -25,7 +25,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 # Target
-MCU = atmega32
+MCU = atmega2560
 # Clock Frequency
 F_CPU = 16000000
 # Baudrate to use
@@ -34,6 +34,10 @@ BAUDRATE = 38400
 BOOTDELAY = 350
 # Command to delete files
 RM = rm -rf
+
+ISP = usb
+TYPE = avrisp2
+TARGET = /dev/tty.usbserial-AE01539L
 
 # ---------------------------------
 
@@ -52,11 +56,12 @@ OBJ = $(SRC:.c=.o)
 SAMPLEOBJ = $(SAMPLESRC:.c=.o)
 
 # Atmega 32:
-# 256 Words: 3F00*2=0x7E00
-# 512 Words: 3E00*2=0x7C00
-# 1024 Words: 3C00*2=0x7800
-# 2048 Words: 3800*2=0x7000
-BOOTSTART = 0x7800
+# --> 1024 Words: 3C00*2=0x7800
+# Atmega 2560:
+# --> 2048 Words: 1F800*2=0x3F000
+# For other MCUs, calculate using
+# "Boot Size Configuration" Table in Datasheet
+BOOTSTART = 0x3F000
 
 LINKER = -Wl,--relax
 SECTION = ,-Ttext=$(BOOTSTART)
@@ -84,21 +89,20 @@ size: yasab.hex
 	make clean
 
 test: sample.hex
-	make -C ../uploader install
-	yasab /dev/tty.usbserial-A100QOUE sample.hex q
+	yasab $(TARGET) sample.hex q
 
 program: yasab.hex
-	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -e -U yasab.hex
+	avrdude -p $(MCU) -c $(TYPE) -P $(ISP) -e -U yasab.hex
 	make clean
 	make sample.hex
 	make cleanPart
 
 programSample: sample.hex
-	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -e -U sample.hex
+	avrdude -p $(MCU) -c $(TYPE) -P $(ISP) -e -U sample.hex
 	make clean
 
 dump:
-	avrdude -p $(MCU) -c stk500v2 -P /dev/tty.usbmodem641 -U flash:r:flash.bin:r
+	avrdude -p $(MCU) -c $(TYPE) -P $(ISP) -U flash:r:flash.bin:r
 	hexdump -C flash.bin
 
 yasab.elf: $(SRC)

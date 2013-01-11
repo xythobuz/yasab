@@ -29,11 +29,22 @@
  */
 #include "serial.h"
 
-// Debug Output
-#if defined(DEBUG) && (DEBUG > 0)
-#define debugPrint(x) serialWriteString(x)
+#ifndef BOOTDELAY
+#define BOOTDELAY 1000
+#endif
+
+#ifndef BAUDRATE
+#define BAUDRATE 38400
+#endif
+
+#ifdef __AVR_ATmega32__
+#define INTERRUPTMOVE GICR
+#define INTERRUPT TIMER2_COMP_vect
+#elif defined(__AVR_ATmega2560__)
+#define INTERRUPTMOVE MCUCR
+#define INTERRUPT TIMER2_COMPA_vect
 #else
-#define debugPrint(ignore)
+#error MCU not compatible with timer module. DIY!
 #endif
 
 #define ERROR 'e'
@@ -41,6 +52,13 @@
 #define FLASH 'f'
 #define CONFIRM 'c'
 #define ACK 'a'
+
+// Debug Output
+#if defined(DEBUG) && (DEBUG > 0)
+#define debugPrint(x) serialWriteString(x)
+#else
+#define debugPrint(ignore)
+#endif
 
 extern uint8_t buf[SPM_PAGESIZE];
 

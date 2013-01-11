@@ -33,19 +33,12 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <util/atomic.h>
+#include <avr/wdt.h>
 
 #define DEBUG 0
-#define VERSION "1.0"
+#define VERSION "1.1"
 
 #include "global.h"
-
-#ifndef BOOTDELAY
-#define BOOTDELAY 500
-#endif
-
-#ifndef BAUDRATE
-#define BAUDRATE 38400
-#endif
 
 uint8_t buf[SPM_PAGESIZE]; // Data to flash
 volatile uint32_t systemTime = 0;
@@ -59,6 +52,12 @@ uint32_t readFourBytes(char c) {
     return i;
 }
 
+void wdtDisable(void) __attribute__((naked)) __attribute__((section(".init3")));
+void wdtDisable(void) {
+    MCUSR = 0;
+    wdt_disable();
+}
+
 void main(void) __attribute__ ((noreturn));
 void main(void) {
     static uint32_t dataPointer = 0;
@@ -68,10 +67,12 @@ void main(void) {
     static uint16_t bufPointer = 0;
     uint8_t c = 0;
 
+    wdtDisable();
+
     // Move Interrupt Vectors into Bootloader Section
-    c = GICR;
-    GICR = c | (1 << IVCE);
-    GICR = c | (1 << IVSEL);
+    c = INTERRUPTMOVE;
+    INTERRUPTMOVE = c | (1 << IVCE);
+    INTERRUPTMOVE = c | (1 << IVSEL);
 
     TCRA |= (1 << WGM21); // CTC Mode
 #if F_CPU == 16000000
@@ -160,12 +161,6 @@ ack:
     gotoApplication();
 }
 
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)
-ISR(TIMER2_COMPA_vect) {
-#elif defined(__AVR_ATmega32__)
-ISR(TIMER2_COMP_vect) {
-#else
-#error MCU not compatible with timer module. DIY!
-#endif
+ISR(INTERRUPT) {
     systemTime++;
 }

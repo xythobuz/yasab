@@ -50,9 +50,9 @@ void gotoApplication(void) {
     TCRA = TCRB = TIMS = 0; // Reset timer
 
     // Fix Interrupt Vectors
-    uint8_t t = GICR;
-    GICR = t | (1 << IVCE);
-    GICR = t & ~(1 << IVSEL);
+    uint8_t t = INTERRUPTMOVE;
+    INTERRUPTMOVE = t | (1 << IVCE);
+    INTERRUPTMOVE = t & ~(1 << IVSEL);
 
     // Call main program
 #ifdef EIND

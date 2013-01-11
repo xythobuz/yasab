@@ -16,8 +16,9 @@ Change configuration options for the AVR firmware in the makefile in "bootloader
 ## Yet Another Simple AVR Bootloader
 
 This AVR Bootloader just gets data from the included uploader. This will be flashed and started.
-Currently supported AVR MCUs:
+Currently supported &amp; tested AVR MCUs:
 > ATmega32
+> ATmega2560
 
 It is using my [avrSerial Library](https://github.com/xythobuz/avrSerial) for UART communications.
 
@@ -25,7 +26,9 @@ Running "make" will produce yasab.hex and sample.hex. The first is the real boot
 
 Configuration Options like Baudrate, Bootdelay or Clock Frequency can be changed in the makefile.
 
-Currently, 1868 bytes in Flash are needed. Therefore, set the bootloader section size to 1024 Words.
+On the ATmega32, 1868 bytes in Flash are needed. Therefore, set the bootloader section size to 1024 Words.
+On the ATmega2560, 2234 bytes in Flash are needed. Therefore, set the bootloader section size to 2048 Words.
+In either way, adjust BOOTSTART in the Makefile!
 
 ## Uploader
 
