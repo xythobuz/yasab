@@ -55,8 +55,6 @@ void setFlow(uint8_t on);
 uint8_t serialHasChar(void);
 uint8_t serialGet(void); // Get a character
 uint8_t serialGetBlocking(void);
-uint8_t serialRxBufferFull(void); // 1 if full
-uint8_t serialRxBufferEmpty(void); // 1 if empty
 
 // Transmission
 void serialWrite(uint8_t data);
@@ -65,48 +63,71 @@ uint8_t serialTxBufferFull(void); // 1 if full
 uint8_t serialTxBufferEmpty(void); // 1 if empty
 
 #if  defined(__AVR_ATmega8__) || defined(__AVR_ATmega16__) || defined(__AVR_ATmega32__) || defined(__AVR_ATmega8515__) || defined(__AVR_ATmega8535__) || defined(__AVR_ATmega323__)
-#define SERIALRECIEVEINTERRUPT USART_RXC_vect
-#define SERIALTRANSMITINTERRUPT USART_UDRE_vect
-#define SERIALDATA UDR
-#define SERIALB UCSRB
-#define SERIALIE UDRIE
-#define SERIALC UCSRC
-#define SERIALUPM1 UPM1
-#define SERIALUPM0 UPM0
-#define SERIALUSBS USBS
-#define SERIALUCSZ0 UCSZ0
-#define SERIALUCSZ1 UCSZ1
-#define SERIALUCSZ2 UCSZ2
-#define SERIALRXCIE RXCIE
-#define SERIALRXEN RXEN
-#define SERIALTXEN TXEN
-#define SERIALA UCSRA
-#define SERIALUDRIE UDRIE
-#define SERIALUDRE UDRE
-#define SERIALBAUD8
-#define SERIALUBRRH UBRRH
-#define SERIALUBRRL UBRRL
+#define SERIALRECIEVEINTERRUPT      USART_RXC_vect
+#define SERIALTRANSMITINTERRUPT     USART_UDRE_vect
+#define SERIALDATA                  UDR
+#define SERIALB                     UCSRB
+#define SERIALIE                    UDRIE
+#define SERIALC                     UCSRC
+#define SERIALUPM1                  UPM1
+#define SERIALUPM0                  UPM0
+#define SERIALUSBS                  USBS
+#define SERIALUCSZ0                 UCSZ0
+#define SERIALUCSZ1                 UCSZ1
+#define SERIALUCSZ2                 UCSZ2
+#define SERIALRXCIE                 RXCIE
+#define SERIALRXEN                  RXEN
+#define SERIALTXEN                  TXEN
+#define SERIALA                     UCSRA
+#define SERIALUDRIE                 UDRIE
+#define SERIALUDRE                  UDRE
+#define SERIALBAUD8 // Can't access Baudrate as 16bit Register
+#define SERIALUBRRH                 UBRRH
+#define SERIALUBRRL                 UBRRL
 #elif defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega640__) || defined(__AVR_ATmega168__)
-// These definitions reflect the registers for the first UART. Change the 0s to 1s and you will use the second one.serial.c
-#define SERIALRECIEVEINTERRUPT USART0_RX_vect
-#define SERIALTRANSMITINTERRUPT USART0_UDRE_vect
-#define SERIALDATA UDR0
-#define SERIALB UCSR0B
-#define SERIALIE UDRIE0
-#define SERIALC UCSR0C
-#define SERIALUPM1 UPM01
-#define SERIALUPM0 UPM00
-#define SERIALUSBS USBS0
-#define SERIALUCSZ0 UCSZ00
-#define SERIALUCSZ1 UCSZ01
-#define SERIALUCSZ2 UCSZ02
-#define SERIALRXCIE RXCIE0
-#define SERIALRXEN RXEN0
-#define SERIALTXEN TXEN0
-#define SERIALA UCSR0A
-#define SERIALUDRIE UDRIE0
-#define SERIALUDRE UDRE0
-#define SERIALUBRR UBRR0
+// Bootloader detects which usart to use (0 or 1)
+#define AUTOMAGICDETECTION
+// These definitions reflect the registers for the first UART
+#define SERIALRECIEVEINTERRUPT      USART0_RX_vect
+#define SERIALTRANSMITINTERRUPT     USART0_UDRE_vect
+#define SERIALDATA                  UDR0
+#define SERIALB                     UCSR0B
+#define SERIALIE                    UDRIE0
+#define SERIALC                     UCSR0C
+#define SERIALUPM1                  UPM01
+#define SERIALUPM0                  UPM00
+#define SERIALUSBS                  USBS0
+#define SERIALUCSZ0                 UCSZ00
+#define SERIALUCSZ1                 UCSZ01
+#define SERIALUCSZ2                 UCSZ02
+#define SERIALRXCIE                 RXCIE0
+#define SERIALRXEN                  RXEN0
+#define SERIALTXEN                  TXEN0
+#define SERIALA                     UCSR0A
+#define SERIALUDRIE                 UDRIE0
+#define SERIALUDRE                  UDRE0
+#define SERIALUBRR                  UBRR0
+
+// These definitions reflect the registers for the second UART
+#define SERIALRECIEVEINTERRUPTB     USART1_RX_vect
+#define SERIALTRANSMITINTERRUPTB    USART1_UDRE_vect
+#define SERIALDATAB                 UDR1
+#define SERIALBB                    UCSR1B
+#define SERIALIEB                   UDRIE1
+#define SERIALCB                    UCSR1C
+#define SERIALUPM1B                 UPM11
+#define SERIALUPM0B                 UPM10
+#define SERIALUSBSB                 USBS1
+#define SERIALUCSZ0B                UCSZ10
+#define SERIALUCSZ1B                UCSZ11
+#define SERIALUCSZ2B                UCSZ12
+#define SERIALRXCIEB                RXCIE1
+#define SERIALRXENB                 RXEN1
+#define SERIALTXENB                 TXEN1
+#define SERIALAB                    UCSR1A
+#define SERIALUDRIEB                UDRIE1
+#define SERIALUDREB                 UDRE1
+#define SERIALUBRRB                 UBRR1
 #else
 #error "AvrSerialLibrary not compatible with your MCU!"
 #endif

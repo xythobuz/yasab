@@ -35,6 +35,10 @@
 
 #include "serial.h"
 
+#define LEDPORT PORTL
+#define LEDDDR DDRL
+#define LEDPIN PL6
+
 void main(void) __attribute__ ((noreturn));
 void main(void) {
     uint8_t c;
@@ -42,13 +46,10 @@ void main(void) {
     serialInit(BAUD(BAUDRATE, F_CPU));
     sei();
 
-    DDRA = 0xC0;
-    PORTA |= 0x40;
-
-    serialWriteString("Hi there...!\n");
+    LEDDDR |= (1 << LEDPIN);
 
     for(;;) {
-        PORTA ^= 0xC0;
+        LEDPORT ^= (1 << LEDPIN);
         if (serialHasChar()) {
             c = serialGet();
             if (c == 'q') {

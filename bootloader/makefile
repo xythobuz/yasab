@@ -31,7 +31,7 @@ F_CPU = 16000000
 # Baudrate to use
 BAUDRATE = 38400
 # Time in ms to wait for incoming files
-BOOTDELAY = 350
+BOOTDELAY = 1500
 # Command to delete files
 RM = rm -rf
 

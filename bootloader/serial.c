@@ -33,20 +33,11 @@
 
 #include "serial.h"
 
-// Defining this enables incoming XON XOFF (sends XOFF if rx buff is full)
-#define FLOWCONTROL
-
 #define XON 0x11
 #define XOFF 0x13
 
-#if (RX_BUFFER_SIZE < 2) || (TX_BUFFER_SIZE < 2)
-#error SERIAL BUFFER TOO SMALL!
-#endif
-
-#ifdef FLOWCONTROL
 #if (RX_BUFFER_SIZE < 8) || (TX_BUFFER_SIZE < 8)
 #error SERIAL BUFFER TOO SMALL!
-#endif
 #endif
 
 #if (RX_BUFFER_SIZE + TX_BUFFER_SIZE) >= (RAMEND - 0x60)
@@ -63,56 +54,120 @@ uint16_t volatile txRead = 0;
 uint16_t volatile txWrite = 0;
 uint8_t volatile shouldStartTransmission = 1;
 
-#ifdef FLOWCONTROL
 uint8_t volatile sendThisNext = 0;
 uint8_t volatile flow = 1;
 uint8_t volatile rxBufferElements = 0;
+
+#ifdef AUTOMAGICDETECTION
+#define UNKNOWN 2
+#define FIRST 0
+#define SECOND 1
+uint8_t detectedStatus = UNKNOWN;
 #endif
 
 ISR(SERIALRECIEVEINTERRUPT) { // Receive complete
-    rxBuffer[rxWrite] = SERIALDATA;
-    if (rxWrite < (RX_BUFFER_SIZE - 1)) {
-        rxWrite++;
-    } else {
-        rxWrite = 0;
+#ifdef AUTOMAGICDETECTION
+    if (detectedStatus == UNKNOWN) {
+        detectedStatus = FIRST;
     }
-
-#ifdef FLOWCONTROL
-    rxBufferElements++;
-    if ((flow == 1) && (rxBufferElements >= (RX_BUFFER_SIZE - FLOWMARK))) {
-        sendThisNext = XOFF;
-        flow = 0;
-        if (shouldStartTransmission) {
-            shouldStartTransmission = 0;
-            SERIALB |= (1 << SERIALUDRIE);
-            SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+    if (detectedStatus == FIRST) {
+#endif
+        rxBuffer[rxWrite] = SERIALDATA;
+        if (rxWrite < (RX_BUFFER_SIZE - 1)) {
+            rxWrite++;
+        } else {
+            rxWrite = 0;
         }
+
+        rxBufferElements++;
+        if ((flow == 1) && (rxBufferElements >= (RX_BUFFER_SIZE - FLOWMARK))) {
+            sendThisNext = XOFF;
+            flow = 0;
+            if (shouldStartTransmission) {
+                shouldStartTransmission = 0;
+                SERIALB |= (1 << SERIALUDRIE);
+                SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+            }
+        }
+#ifdef AUTOMAGICDETECTION
     }
 #endif
 }
+
+#ifdef AUTOMAGICDETECTION
+ISR(SERIALRECIEVEINTERRUPTB) { // Receive complete
+    if (detectedStatus == UNKNOWN) {
+        detectedStatus = SECOND;
+    }
+    if (detectedStatus == SECOND) {
+        rxBuffer[rxWrite] = SERIALDATAB;
+        if (rxWrite < (RX_BUFFER_SIZE - 1)) {
+            rxWrite++;
+        } else {
+            rxWrite = 0;
+        }
+
+        rxBufferElements++;
+        if ((flow == 1) && (rxBufferElements >= (RX_BUFFER_SIZE - FLOWMARK))) {
+            sendThisNext = XOFF;
+            flow = 0;
+            if (shouldStartTransmission) {
+                shouldStartTransmission = 0;
+                SERIALBB |= (1 << SERIALUDRIEB);
+                SERIALAB |= (1 << SERIALUDREB); // Trigger Interrupt
+            }
+        }
+    }
+}
+#endif
 
 ISR(SERIALTRANSMITINTERRUPT) { // Data register empty
-#ifdef FLOWCONTROL
-    if (sendThisNext) {
-        SERIALDATA = sendThisNext;
-        sendThisNext = 0;
-    } else {
+#ifdef AUTOMAGICDETECTION
+    if (detectedStatus == FIRST) {
 #endif
-        if (txRead != txWrite) {
-            SERIALDATA = txBuffer[txRead];
-            if (txRead < (TX_BUFFER_SIZE -1)) {
-                txRead++;
-            } else {
-                txRead = 0;
-            }
+        if (sendThisNext) {
+            SERIALDATA = sendThisNext;
+            sendThisNext = 0;
         } else {
-            shouldStartTransmission = 1;
-            SERIALB &= ~(1 << SERIALUDRIE); // Disable Interrupt
+            if (txRead != txWrite) {
+                SERIALDATA = txBuffer[txRead];
+                if (txRead < (TX_BUFFER_SIZE -1)) {
+                    txRead++;
+                } else {
+                    txRead = 0;
+                }
+            } else {
+                shouldStartTransmission = 1;
+                SERIALB &= ~(1 << SERIALUDRIE); // Disable Interrupt
+            }
         }
-#ifdef FLOWCONTROL
+#ifdef AUTOMAGICDETECTION
     }
 #endif
 }
+
+#ifdef AUTOMAGICDETECTION
+ISR(SERIALTRANSMITINTERRUPTB) { // Data register empty
+    if (detectedStatus == SECOND) {
+        if (sendThisNext) {
+            SERIALDATAB = sendThisNext;
+            sendThisNext = 0;
+        } else {
+            if (txRead != txWrite) {
+                SERIALDATAB = txBuffer[txRead];
+                if (txRead < (TX_BUFFER_SIZE -1)) {
+                    txRead++;
+                } else {
+                    txRead = 0;
+                }
+            } else {
+                shouldStartTransmission = 1;
+                SERIALBB &= ~(1 << SERIALUDRIEB); // Disable Interrupt
+            }
+        }
+    }
+}
+#endif
 
 void serialInit(uint16_t baud) {
     // Default: 8N1
@@ -128,31 +183,30 @@ void serialInit(uint16_t baud) {
 
     SERIALB = (1 << SERIALRXCIE); // Enable Interrupts
     SERIALB |= (1 << SERIALRXEN) | (1 << SERIALTXEN); // Enable Receiver/Transmitter
+
+#ifdef AUTOMAGICDETECTION
+    // Also initialize second UART
+    SERIALCB = (1 << SERIALUCSZ0B) | (1 << SERIALUCSZ1B);
+#ifdef SERIALBAUD8
+    SERIALUBRRHB = (baud >> 8);
+    SERIALUBRRLB = baud;
+#else
+    SERIALUBRRB = baud;
+#endif
+    SERIALBB = (1 << SERIALRXCIEB) | (1 << SERIALRXENB) | (1 << SERIALTXENB);
+#endif
 }
 
 void serialClose(void) {
-    uint8_t sreg = SREG;
-    sei();
-    while (!serialTxBufferEmpty());
-    while (SERIALB & (1 << SERIALUDRIE)); // Wait while Transmit Interrupt is on
-    cli();
     SERIALB = 0;
     SERIALC = 0;
-    rxRead = 0;
-    txRead = 0;
-    rxWrite = 0;
-    txWrite = 0;
-    shouldStartTransmission = 1;
-#ifdef FLOWCONTROL
-    flow = 1;
-    sendThisNext = 0;
-    rxBufferElements = 0;
+#ifdef AUTOMAGICDETECTION
+    SERIALBB = 0;
+    SERIALCB = 0;
 #endif
-    SREG = sreg;
 }
 
 void setFlow(uint8_t on) {
-#ifdef FLOWCONTROL
     if (flow != on) {
         if (on == 1) {
             // Send XON
@@ -161,8 +215,17 @@ void setFlow(uint8_t on) {
             flow = 1;
             if (shouldStartTransmission) {
                 shouldStartTransmission = 0;
-                SERIALB |= (1 << SERIALUDRIE);
-                SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+                if (detectedStatus == FIRST) {
+#endif
+                    SERIALB |= (1 << SERIALUDRIE);
+                    SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+                } else if (detectedStatus == SECOND) {
+                    SERIALBB |= (1 << SERIALUDRIEB);
+                    SERIALAB |= (1 << SERIALUDREB);
+                }
+#endif
             }
         } else {
             // Send XOFF
@@ -170,14 +233,29 @@ void setFlow(uint8_t on) {
             flow = 0;
             if (shouldStartTransmission) {
                 shouldStartTransmission = 0;
-                SERIALB |= (1 << SERIALUDRIE);
-                SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+                if (detectedStatus == FIRST) {
+#endif
+                    SERIALB |= (1 << SERIALUDRIE);
+                    SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+                } else if (detectedStatus == SECOND) {
+                    SERIALBB |= (1 << SERIALUDRIEB);
+                    SERIALAB |= (1 << SERIALUDREB);
+                }
+#endif
             }
         }
-        // Wait till it's transmitted
-        while (SERIALB & (1 << SERIALUDRIE));
-    }
+#ifdef AUTOMAGICDETECTION
+        if (detectedStatus == FIRST) {
 #endif
+            while (SERIALB & (1 << SERIALUDRIE)); // Wait till it's transmitted
+#ifdef AUTOMAGICDETECTION
+        } else if (detectedStatus == SECOND) {
+            while (SERIALBB & (1 << SERIALUDRIEB));
+        }
+#endif
+    }
 }
 
 // ---------------------
@@ -200,7 +278,6 @@ uint8_t serialGetBlocking(void) {
 uint8_t serialGet(void) {
     uint8_t c;
 
-#ifdef FLOWCONTROL
     rxBufferElements--;
     if ((flow == 0) && (rxBufferElements <= FLOWMARK)) {
         while (sendThisNext != 0);
@@ -208,11 +285,19 @@ uint8_t serialGet(void) {
         flow = 1;
         if (shouldStartTransmission) {
             shouldStartTransmission = 0;
-            SERIALB |= (1 << SERIALUDRIE);
-            SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+            if (detectedStatus == FIRST) {
+#endif
+                SERIALB |= (1 << SERIALUDRIE);
+                SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+            } else if (detectedStatus == SECOND) {
+                SERIALBB |= (1 << SERIALUDRIE);
+                SERIALAB |= (1 << SERIALUDRE);
+            }
+#endif
         }
     }
-#endif
 
     if (rxRead != rxWrite) {
         c = rxBuffer[rxRead];
@@ -228,28 +313,14 @@ uint8_t serialGet(void) {
     }
 }
 
-uint8_t serialRxBufferFull(void) {
-    return (((rxWrite + 1) == rxRead) || ((rxRead == 0) && ((rxWrite + 1) == RX_BUFFER_SIZE)));
-}
-
-uint8_t serialRxBufferEmpty(void) {
-    if (rxRead != rxWrite) {
-        return 0;
-    } else {
-        return 1;
-    }
-}
-
 // ----------------------
 // |    Transmission    |
 // ----------------------
 
 void serialWrite(uint8_t data) {
-#ifdef SERIALINJECTCR
     if (data == '\n') {
         serialWrite('\r');
     }
-#endif
     while (serialTxBufferFull());
 
     uint8_t sreg = SREG;
@@ -262,8 +333,17 @@ void serialWrite(uint8_t data) {
     }
     if (shouldStartTransmission) {
         shouldStartTransmission = 0;
-        SERIALB |= (1 << SERIALUDRIE); // Enable Interrupt
-        SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+        if (detectedStatus != SECOND) { // Sane default for debugging
+#endif
+            SERIALB |= (1 << SERIALUDRIE); // Enable Interrupt
+            SERIALA |= (1 << SERIALUDRE); // Trigger Interrupt
+#ifdef AUTOMAGICDETECTION
+        } else {
+            SERIALBB |= (1 << SERIALUDRIE); // Enable Interrupt
+            SERIALAB |= (1 << SERIALUDRE); // Trigger Interrupt
+        }
+#endif
     }
     SREG = sreg;
 }

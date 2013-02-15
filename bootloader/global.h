@@ -30,7 +30,7 @@
 #include "serial.h"
 
 #ifndef BOOTDELAY
-#define BOOTDELAY 1000
+#define BOOTDELAY 2000
 #endif
 
 #ifndef BAUDRATE
