@@ -46,7 +46,8 @@ void intHandler(int dummy);
 #define CONFIRM 'c'
 #define ACK 'a'
 
-#define PINGDELAY 10 // in milliseconds
+#define PINGDELAY 100 // in milliseconds
+#define RESETDELAY 500 // in milliseconds
 
 int fd = -1;
 
@@ -113,7 +114,7 @@ ping:
     if (argc > 3) {
         c = argv[3][0];
         serialWriteChar(fd, c);
-        usleep(PINGDELAY * 400);
+        usleep(RESETDELAY * 1000);
     }
     c = 'f';
     serialWriteChar(fd, c);
