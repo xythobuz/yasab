@@ -112,9 +112,10 @@ ping:
 
     if (argc > 3) {
         c = argv[3][0];
-    } else {
-        c = 'f';
+        serialWriteChar(fd, c);
+        usleep(PINGDELAY * 400);
     }
+    c = 'f';
     serialWriteChar(fd, c);
     usleep(PINGDELAY * 1000);
     if ((serialReadRaw(fd, &c, 1) != 1) || (c != OKAY)) {
