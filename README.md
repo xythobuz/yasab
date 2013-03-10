@@ -38,6 +38,10 @@ This is a small utility to upload hex files to YASAB.
 The optional parameter, q, can be a character that is sent to reset the target.
 > Usage: uploader /dev/port /path/to.hex [q]
 
+## Android Uploader
+
+I've also written a YASAB Uploader implementation in Java for Android. It is used in my [xyCopter Remote Control App](https://github.com/xythobuz/xyControl/tree/master/tools/xyCopter).
+
 ## Protocol
 
 38400, 8N1, XON-XOFF will be used for data transmission.

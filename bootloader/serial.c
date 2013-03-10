@@ -193,7 +193,8 @@ void serialInit(uint16_t baud) {
 #else
     SERIALUBRRB = baud;
 #endif
-    SERIALBB = (1 << SERIALRXCIEB) | (1 << SERIALRXENB) | (1 << SERIALTXENB);
+    SERIALBB = (1 << SERIALRXCIEB);
+    SERIALBB |= (1 << SERIALRXENB) | (1 << SERIALTXENB);
 #endif
 }
 
