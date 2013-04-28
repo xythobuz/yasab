@@ -20,16 +20,16 @@ Currently supported &amp; tested AVR MCUs:
 > ATmega32
 > ATmega2560
 
-It is using my [avrSerial Library](https://github.com/xythobuz/avrSerial) for UART communications, but heavily modified on the 2560.
+It is using my [avrSerial Library](https://github.com/xythobuz/avrSerial) for UART communications.
 
-On the Atmega168, ATmega128x and ATmega256x, YASAB will listen on both UART0 and UART1. If data arrives on one of these first, it will be used to get a new firmware.
+On devices with more than one UART module, YASAB will listen on all of them.
 
 Running "make" will produce yasab.hex and sample.hex. The first is the real bootloader. The second is a small program to test the bootloader.
 
 Configuration Options like Baudrate, Bootdelay or Clock Frequency can be changed in the makefile.
 
-On the ATmega32, 1868 bytes in Flash are needed. Therefore, set the bootloader section size to 1024 Words.
-On the ATmega2560, 2684 bytes in Flash are needed. Therefore, set the bootloader section size to 2048 Words.
+On the ATmega32, 2022 bytes in Flash are needed. Therefore, set the bootloader section size to 1024 Words.
+On the ATmega2560, 3864 bytes in Flash are needed. Therefore, set the bootloader section size to 2048 Words.
 In either way, adjust BOOTSTART in the Makefile!
 
 ## Uploader
