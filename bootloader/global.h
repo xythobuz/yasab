@@ -53,9 +53,16 @@
 #define CONFIRM 'c'
 #define ACK 'a'
 
+// On an AVR with more than one UART, you can select which one to use (0 or 1) by setting a switch before boot:
+#define SELECTDDR DDRJ
+#define SELECTPORT PORTJ
+#define SELECTPIN PINJ
+#define SELECTBIT PJ1
+#define PLUSBIT PJ0
+
 // Debug Output
 #if defined(DEBUG) && (DEBUG > 0)
-#define debugPrint(x) serialWriteString(x)
+#define debugPrint(x) serialWriteString(0, x)
 #else
 #define debugPrint(ignore)
 #endif
@@ -64,7 +71,7 @@ extern uint8_t buf[SPM_PAGESIZE];
 
 void parse(void);
 void set(uint8_t *d, uint8_t c, uint16_t l);
-void program(uint32_t page, uint8_t *d);
+void program(uint8_t uart, uint32_t page, uint8_t *d);
 void gotoApplication(void);
 
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega2560__)

@@ -44,7 +44,9 @@ void set(uint8_t *d, uint8_t c, uint16_t l) {
 void gotoApplication(void) {
     void (*app)(void) = 0x0000;
     // Free Hardware Resources
-    serialClose();
+    for (uint8_t i = 0; i < serialAvailable(); i++) {
+        serialClose(i);
+    }
     cli();
 
     TCRA = TCRB = TIMS = 0; // Reset timer

@@ -38,6 +38,7 @@ RM = rm -rf
 ISP = usb
 TYPE = avrisp2
 TARGET = /dev/tty.usbserial-AE01539L
+#TARGET = /dev/tty.usbserial-A100QOUE
 
 # ---------------------------------
 
@@ -92,17 +93,17 @@ test: sample.hex
 	yasab $(TARGET) sample.hex q
 
 program: yasab.hex
-	avrdude -p $(MCU) -c $(TYPE) -P $(ISP) -e -U yasab.hex
+	avrdude -V -p $(MCU) -c $(TYPE) -P $(ISP) -e -U yasab.hex
 	make clean
 	make sample.hex
 	make cleanPart
 
 programSample: sample.hex
-	avrdude -p $(MCU) -c $(TYPE) -P $(ISP) -e -U sample.hex
+	avrdude -V -p $(MCU) -c $(TYPE) -P $(ISP) -e -U sample.hex
 	make clean
 
 dump:
-	avrdude -p $(MCU) -c $(TYPE) -P $(ISP) -U flash:r:flash.bin:r
+	avrdude -V -p $(MCU) -c $(TYPE) -P $(ISP) -U flash:r:flash.bin:r
 	hexdump -C flash.bin
 
 yasab.elf: $(SRC)

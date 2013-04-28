@@ -33,6 +33,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
+#include "global.h"
 #include "serial.h"
 
 #define LEDPORT PORTL
@@ -43,21 +44,28 @@ void main(void) __attribute__ ((noreturn));
 void main(void) {
     uint8_t c;
 
-    serialInit(BAUD(BAUDRATE, F_CPU));
+    for (uint8_t i = 0; i < serialAvailable(); i++) {
+        serialInit(i, BAUD(BAUDRATE, F_CPU));
+    }
     sei();
 
     LEDDDR |= (1 << LEDPIN);
+    for (uint8_t i = 0; i < serialAvailable(); i++) {
+        serialWriteString(i, "Greetings from the YASAB test firmware!\n");
+    }
 
     for(;;) {
         LEDPORT ^= (1 << LEDPIN);
-        if (serialHasChar()) {
-            c = serialGet();
-            if (c == 'q') {
-                serialWriteString("\nGoodbye...\n");
-                wdt_enable(WDTO_15MS);
-                while(1);
-            } else {
-                serialWrite(c);
+        for (uint8_t i = 0; i < serialAvailable(); i++) {
+            if (serialHasChar(i)) {
+                c = serialGet(i);
+                if (c == 'q') {
+                    serialWriteString(i, "\nGoodbye...\n");
+                    wdt_enable(WDTO_15MS);
+                    while(1);
+                } else {
+                    serialWrite(i, c);
+                }
             }
         }
     }

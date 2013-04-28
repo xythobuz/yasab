@@ -43,12 +43,12 @@
 uint8_t buf[SPM_PAGESIZE]; // Data to flash
 volatile uint32_t systemTime = 0;
 
-uint32_t readFourBytes(char c) {
+uint32_t readFourBytes(uint8_t uart, char c) {
     uint32_t i;
     i = (((uint32_t)c) << 24);
-    i |= (((uint32_t)serialGetBlocking()) << 16);
-    i |= (((uint32_t)serialGetBlocking()) << 8);
-    i |= ((uint32_t)serialGetBlocking());
+    i |= (((uint32_t)serialGetBlocking(uart)) << 16);
+    i |= (((uint32_t)serialGetBlocking(uart)) << 8);
+    i |= ((uint32_t)serialGetBlocking(uart));
     return i;
 }
 
@@ -66,6 +66,7 @@ void main(void) {
     static uint32_t dataLength;
     static uint16_t bufPointer = 0;
     uint8_t c = 0;
+    uint8_t uart = 0;
 
     wdtDisable();
 
@@ -83,7 +84,9 @@ void main(void) {
 #endif
     TIMS |= (1 << OCIE); // Enable compare match interrupt
 
-    serialInit(BAUD(BAUDRATE, F_CPU));
+    for (uint8_t i = 0; i < serialAvailable(); i++) {
+        serialInit(i, BAUD(BAUDRATE, F_CPU));
+    }
     sei();
     set(buf, 0xFF, sizeof(buf));
 
@@ -92,21 +95,24 @@ void main(void) {
     debugPrint(" by xythobuz\n");
 
     while (systemTime < BOOTDELAY) {
-        if (serialHasChar()) {
-            c = serialGet(); // Clear rx buffer
-            goto ok; // Yeah, shame on me...
+        for (uint8_t i = 0; i < serialAvailable(); i++) {
+            if (serialHasChar(i)) {
+                c = serialGet(i); // Clear rx buffer
+                uart = i;
+                goto ok; // Yeah, shame on me...
+            }
         }
     }
     gotoApplication();
 
 ok:
-    serialWrite(OKAY);
-    while (!serialTxBufferEmpty()); // Wait till it's sent
+    serialWrite(uart, OKAY);
+    while (!serialTxBufferEmpty(uart)); // Wait till it's sent
 
     uint32_t t = systemTime;
     while (systemTime < (t + BOOTDELAY)) {
-        if (serialHasChar()) {
-            if (serialGet() == CONFIRM) {
+        if (serialHasChar(uart)) {
+            if (serialGet(uart) == CONFIRM) {
                 goto ack; // I deserve it...
             }
         }
@@ -114,42 +120,42 @@ ok:
     gotoApplication();
 
 ack:
-    serialWrite(ACK);
-    while (!serialTxBufferEmpty());
+    serialWrite(uart, ACK);
+    while (!serialTxBufferEmpty(uart));
 
-    dataAddress = readFourBytes(serialGetBlocking());
-    serialWrite(OKAY);
-    while (!serialTxBufferEmpty()); // Wait till it's sent
+    dataAddress = readFourBytes(uart, serialGetBlocking(uart));
+    serialWrite(uart, OKAY);
+    while (!serialTxBufferEmpty(uart)); // Wait till it's sent
     debugPrint("Got address!\n");
 
-    dataLength = readFourBytes(serialGetBlocking());
+    dataLength = readFourBytes(uart, serialGetBlocking(uart));
     if ((dataAddress + dataLength) >= BOOTSTART) {
-        serialWrite(ERROR);
+        serialWrite(uart, ERROR);
     } else {
-        serialWrite(OKAY);
+        serialWrite(uart, OKAY);
     }
-    while (!serialTxBufferEmpty());
+    while (!serialTxBufferEmpty(uart));
     debugPrint("Got length!\n");
 
     while (readPointer < dataLength) {
-        buf[bufPointer] = serialGetBlocking();
+        buf[bufPointer] = serialGetBlocking(uart);
         readPointer++;
         if (bufPointer < (SPM_PAGESIZE - 1)) {
             bufPointer++;
         } else {
             bufPointer = 0;
-            program(dataPointer + dataAddress, buf);
+            program(uart, dataPointer + dataAddress, buf);
             dataPointer += SPM_PAGESIZE;
             set(buf, 0xFF, sizeof(buf));
-            serialWrite(OKAY);
+            serialWrite(uart, OKAY);
         }
     }
 
     debugPrint("Got data!\n");
 
     if (bufPointer != 0) {
-        program(dataPointer + dataAddress, buf);
-        serialWrite(OKAY);
+        program(uart, dataPointer + dataAddress, buf);
+        serialWrite(uart, OKAY);
     }
 
     uint8_t sreg = SREG;

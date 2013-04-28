@@ -41,7 +41,7 @@
 char buff[5];
 #endif
 
-void program(uint32_t page, uint8_t *d) {
+void program(uint8_t uart, uint32_t page, uint8_t *d) {
     uint16_t i;
     uint8_t sreg = SREG;
 
@@ -74,7 +74,7 @@ void program(uint32_t page, uint8_t *d) {
     debugPrint("\n");
 #endif
 
-    setFlow(0);
+    setFlow(uart, 0);
     cli();
 
     eeprom_busy_wait();
@@ -88,5 +88,5 @@ void program(uint32_t page, uint8_t *d) {
     boot_page_write(page);
 
     SREG = sreg;
-    setFlow(1);
+    setFlow(uart, 1);
 }
