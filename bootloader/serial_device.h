@@ -42,14 +42,14 @@
  *  Contains Register and Bit Positions for different AVR devices.
  */
 
-#if  defined(__AVR_ATmega8__) || defined(__AVR_ATmega16__) || defined(__AVR_ATmega32__) \
-    || defined(__AVR_ATmega8515__) || defined(__AVR_ATmega8535__) \
-|| defined(__AVR_ATmega323__)
+#if  defined(__AVR_ATmega8__) || defined(__AVR_ATmega16__) \
+    || defined(__AVR_ATmega32__) || defined(__AVR_ATmega8515__) \
+    || defined(__AVR_ATmega8535__) || defined(__AVR_ATmega323__)
 
 #define UART_COUNT 1
 #define UART_REGISTERS 6
 #define UART_BITS 7
-volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {{
+volatile uint8_t * const serialRegisters[UART_COUNT][UART_REGISTERS] = {{
     &UDR,
     &UCSRB,
     &UCSRC,
@@ -58,7 +58,7 @@ volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {{
     &UBRRL
 }};
 #define SERIALBAUDBIT 8
-uint8_t serialBits[UART_COUNT][UART_BITS] = {{
+uint8_t const serialBits[UART_COUNT][UART_BITS] = {{
     UCSZ0,
     UCSZ1,
     RXCIE,
@@ -70,22 +70,25 @@ uint8_t serialBits[UART_COUNT][UART_BITS] = {{
 #define SERIALRECIEVEINTERRUPT USART_RXC_vect
 #define SERIALTRANSMITINTERRUPT USART_UDRE_vect
 
-#elif defined(__AVR_ATmega168__)
+#elif defined(__AVR_ATmega168__) || defined(__AVR_ATmega328__) \
+    || defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) \
+    || defined(__AVR_ATmega168P__) || defined(__AVR_ATmega328P__) \
+    || defined(__AVR_ATmega48P__) || defined(__AVR_ATmega88P__)
 
 #define UART_COUNT 1
 #define UART_REGISTERS 5
 #define UART_BITS 7
-volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {{
+volatile uint8_t * const serialRegisters[UART_COUNT][UART_REGISTERS] = {{
     &UDR0,
     &UCSR0B,
     &UCSR0C,
     &UCSR0A
 }};
 #define SERIALBAUDBIT 16
-volatile uint16_t *serialBaudRegisters[UART_COUNT] = {
+volatile uint16_t * const serialBaudRegisters[UART_COUNT] = {
     &UBRR0
 };
-uint8_t serialBits[UART_COUNT][UART_BITS] = {{
+uint8_t const const serialBits[UART_COUNT][UART_BITS] = {{
     UCSZ00,
     UCSZ01,
     RXCIE0,
@@ -97,12 +100,13 @@ uint8_t serialBits[UART_COUNT][UART_BITS] = {{
 #define SERIALRECIEVEINTERRUPT USART_RX_vect
 #define SERIALTRANSMITINTERRUPT USART_UDRE_vect
 
-#elif defined(__AVR_ATmega2561__) || defined(__AVR_ATmega1281__)
+#elif defined(__AVR_ATmega2561__) || defined(__AVR_ATmega1281__) \
+    || defined(__AVR_ATmega1284P__)
 
 #define UART_COUNT 2
-#define UART_REGISTERS 2
+#define UART_REGISTERS 4
 #define UART_BITS 7
-volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {
+volatile uint8_t * const serialRegisters[UART_COUNT][UART_REGISTERS] = {
     {
         &UDR0,
         &UCSR0B,
@@ -117,10 +121,10 @@ volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {
     }
 };
 #define SERIALBAUDBIT 16
-volatile uint16_t *serialBaudRegisters[UART_COUNT] = {
+volatile uint16_t * const serialBaudRegisters[UART_COUNT] = {
     &UBRR0, &UBRR1
 };
-uint8_t serialBits[UART_COUNT][UART_BITS] = {
+uint8_t const serialBits[UART_COUNT][UART_BITS] = {
     {
         UCSZ00,
         UCSZ01,
@@ -152,7 +156,7 @@ uint8_t serialBits[UART_COUNT][UART_BITS] = {
 #define UART_COUNT 4
 #define UART_REGISTERS 4
 #define UART_BITS 7
-volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {
+volatile uint8_t * const serialRegisters[UART_COUNT][UART_REGISTERS] = {
     {
         &UDR0,
         &UCSR0B,
@@ -179,10 +183,10 @@ volatile uint8_t *serialRegisters[UART_COUNT][UART_REGISTERS] = {
     }
 };
 #define SERIALBAUDBIT 16
-volatile uint16_t *serialBaudRegisters[UART_COUNT] = {
+volatile uint16_t * const serialBaudRegisters[UART_COUNT] = {
     &UBRR0, &UBRR1, &UBRR2, &UBRR3
 };
-uint8_t serialBits[UART_COUNT][UART_BITS] = {
+uint8_t const serialBits[UART_COUNT][UART_BITS] = {
     {
         UCSZ00,
         UCSZ01,
@@ -229,9 +233,37 @@ uint8_t serialBits[UART_COUNT][UART_BITS] = {
 #define SERIALRECIEVEINTERRUPT3  USART3_RX_vect
 #define SERIALTRANSMITINTERRUPT3 USART3_UDRE_vect
 
+#elif  defined(__AVR_ATtiny2313__) || defined(__AVR_ATtiny2313A__) \
+    || defined(__AVR_ATtiny4313__)
+
+#define UART_COUNT 1
+#define UART_REGISTERS 6
+#define UART_BITS 7
+volatile uint8_t * const  serialRegisters[UART_COUNT][UART_REGISTERS] = {{
+    &UDR,
+    &UCSRB,
+    &UCSRC,
+    &UCSRA,
+    &UBRRH,
+    &UBRRL
+}};
+#define SERIALBAUDBIT 8
+uint8_t const serialBits[UART_COUNT][UART_BITS] = {{
+    UCSZ0,
+    UCSZ1,
+    RXCIE,
+    RXEN,
+    TXEN,
+    UDRIE,
+    UDRE
+}};
+#define SERIALRECIEVEINTERRUPT USART_RX_vect
+#define SERIALTRANSMITINTERRUPT USART_UDRE_vect
+
 #else
 #error "AvrSerialLibrary not compatible with your MCU!"
 #endif
 
 #endif // _serial_device_h
 /** @} */
+
