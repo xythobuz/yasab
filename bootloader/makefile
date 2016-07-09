@@ -73,14 +73,14 @@ CARGS += -funsigned-char
 CARGS += -funsigned-bitfields
 CARGS += -fpack-struct
 CARGS += -fshort-enums
-CARGS += -Wall -Wstrict-prototypes
+CARGS += -Wall -pedantic -Wstrict-prototypes
 CARGS += -std=$(CSTANDARD)
 CARGS += -DF_CPU=$(F_CPU)
 CARGS += -DBOOTSTART=$(BOOTSTART)
 CARGS += -DBAUDRATE=$(BAUDRATE)
 CARGS += -DBOOTDELAY=$(BOOTDELAY)
 CARGS += -ffreestanding
-CARGS += --combine -fwhole-program
+CARGS += -flto -fwhole-program
 
 # ---------------------------------
 
@@ -108,7 +108,7 @@ dump:
 
 yasab.elf: $(SRC)
 	avr-gcc $(CARGS) $(LINKER)$(SECTION) $(SRC) --output yasab.elf
-	avr-size --mcu=$(MCU) -C yasab.elf
+	avr-size yasab.elf
 
 yasab.hex: yasab.elf
 	avr-objcopy -O ihex yasab.elf yasab.hex

@@ -41,6 +41,7 @@ void set(uint8_t *d, uint8_t c, uint16_t l) {
     }
 }
 
+void gotoApplication(void) __attribute__ ((noreturn));
 void gotoApplication(void) {
     void (*app)(void) = 0x0000;
     // Free Hardware Resources
