@@ -129,3 +129,4 @@ cleanPart:
 clean: cleanPart
 	$(RM) *.hex
 	$(RM) *.bin
+
